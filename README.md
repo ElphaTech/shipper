@@ -29,6 +29,11 @@ source venv/bin/activate
 pip install requirements.txt
 ```
 
+Make a .env file with your TMDB API key.
+```env
+TMDB_API_KEY=putyourkeyhere
+```
+
 Run the input script.
 ```sh
 python shipper_input.py
