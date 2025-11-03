@@ -243,8 +243,16 @@ def show_status(data, currentjobs):
         first, rest = job['name'].split(' - ', 1)
         short = (first[:(name_len - 12)] +
                  "...") if len(first) > name_len else first
-        print(f"{uid:>5} | {short} - {rest} | {
-              status:<18} | {progress:<12} | {eta:<8}")
+        if status != 'error':
+            print(f"{uid:>5} | {short} - {rest} | {
+                status:<18} | {progress:<12} | {eta:<8}")
+        else:
+            try:
+                print(f"{uid:>5} | {short} - {rest} | {
+                    status:<18}: {data[uid]['error']:<24}")
+            except:
+                print(f"{uid:>5} | {short} - {rest} | {
+                    status:<18}: Unknown")
 
 
 atexit.register(cleanup_subprocess)
@@ -264,7 +272,7 @@ with data_lock:
         if status in ["encoded", "copied"]:
             jobs_to_delete.append(uid)
 
-        # 2. Reset jobs interrupted while running (or counting frames) to 'notstarted'
+        # 2. Reset jobs interrupted to 'notstarted'
         elif status == "getting_frames":
             print(f"Resetting interrupted job {
                   uid} ({job.get('name', 'N/A')}) to 'notstarted'.")
@@ -275,7 +283,8 @@ with data_lock:
             job["status"] = "ready_to_encode"
             try:
                 os.remove(job['encoded_file'])
-            except:
+            except Exception as e:
+                print(f'Failed to remove due to error: {e}')
                 pass
 
         # 3. Keep jobs that are ready to encode (frame count is already done)
@@ -284,18 +293,24 @@ with data_lock:
 
         # 4. Report error jobs
         elif status == "error":
-            print(f"Job {uid} is in 'error' state. Error: {
-                  job.get('error', 'Unknown')}")
-            if input('Reset job? (Y/n): ').strip() in 'Yy ':
+            joberror = job.get('error', 'Unknown')
+            print(f"Job {uid} is in 'error' state. Error: {joberror}")
+            jobaction = input(
+                'Reset/delete/ignore job? (R/d/i): ').strip().lower()
+            if jobaction in ['r', '']:
                 if job.get('frames', None):
                     job['status'] = 'ready_to_encode'
-                    os.remove(job['encoded_file'])
+                    try:
+                        os.remove(job['encoded_file'])
+                    except Exception as e:
+                        print(f'Failed to remove due to error: {e}')
+                        pass
                 else:
                     job['status'] = 'notstarted'
-                try:
-                    os.remove(job['encoded_file'])
-                except:
-                    pass
+            if jobaction == 'd':
+                jobs_to_delete.append(uid)
+            elif jobaction != 'i':
+                print('Unknown action. Ignoring.')
 
     # Perform the deletion outside the iteration
     for uid in jobs_to_delete:
@@ -372,8 +387,17 @@ try:
                             data[uid]['status'] = 'encoded'
                             currentjobs.remove(currentjob)
                         else:
+                            exitcodes = {
+                                2: "Input directory not given. This shouldn't be possible.",
+                                3: "Output directory not given. This shouldn't be possible.",
+                                7: "Input file does not exist. Please either stop the daemon and fix the path or remove the job and readd it with the input script.",
+                                4: "Invalid quality setting. This shouldn't be possible if you used the input script.",
+                                5: "Disk space too low. Please clear space.",
+                                6: "Unknown error. Normally due to ffmpeg being killed or ffmpeg failing."
+                            }
                             data[uid]["status"] = 'error'
-                            data[uid]["error"] = f'exitcode: {exitcode}'
+                            data[uid]["error"] = f'{exitcode}: {
+                                exitcodes[exitcode]}'
                             currentjobs.remove(currentjob)
             # Framecount jobs are cleaned up within the 'threaded_frame_count' function
 

@@ -52,10 +52,10 @@ Features
 Todo
 ---
 - [ ] Improve error handling:
-    - [ ] Allow user to cancel job if failed last time.
+    - [x] Allow user to cancel job if failed last time.
     - [ ] Print errors on finish.
-    - [ ] If error code, then show the meaning of the error code.
-    - [ ] Show errors on shipperd display.
+    - [x] If error code, then show the meaning of the error code.
+    - [x] Show errors on shipperd display.
 - [ ] Allow flag for shutdown on complete.
 - [ ] Reorganise file structure to move functions to their own files.
 - [ ] Add a configuration file containing settings for:
