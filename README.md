@@ -1,22 +1,39 @@
 # shipper
 **shipper** is a utility with the purpose of making re-encoding and compressing of movies and TV shows easier. While it is built with Plex in mind, it can be used for anything. It is comprised of a daemon which can be run in the background and also acts as a dashboard for current jobs as well as a input script to safely add new jobs to the queue.
 
-> Warning, I have no idea if this will work for Windows. It currently uses a bash script so probably not.
+Requirements
+---
+- ffmpeg
+
 
 Installation & Usage
 ---
-`git clone https://github.com/ElphaTech/shipper.git`
-`python shipperd.py`
-In a separate terminal:
-`python -m venv venv`
-`source venv/bin/activate`
-`pip install requirements.txt`
-`python shipper_input.py`
+Move to the directory you keep your media in and clone the repository.
+```sh
+git clone https://github.com/ElphaTech/shipper.git
+```
 
-### Requirements
-- ffmpeg
-- python
-- python packages in requirements.txt
+Enter the shipper directory and run the daemon.
+```sh
+cd shipper
+python shipperd.py
+```
+
+
+To use the input script a few libraries are needed. In a **seperate terminal** navigate to the shipper directory and run the following.
+
+Make and activate a virtual environment. Then install the requirements.
+```sh
+python -m venv venv
+source venv/bin/activate
+pip install requirements.txt
+```
+
+Run the input script.
+```sh
+python shipper_input.py
+```
+
 
 Features
 ---
@@ -45,6 +62,8 @@ Todo
 - [ ] `scp` jobs for automatically moving files to a different device.
 
 # Plex file structure
+```
+/plexmedia/
 ├── Movies/
 │   └── Name (Year) {ID}/
 │       └── Name (Year) {ID}.ext
@@ -52,5 +71,6 @@ Todo
     └── Name (Year) {ID}/
         └── Season 00/
             └── Name (Year) - s00e00 - EpName.ext
+```
 
 
