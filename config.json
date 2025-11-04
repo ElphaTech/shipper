@@ -1,0 +1,32 @@
+{
+    "joblimits": {
+        "encode": 1,
+        "framecount": 2
+    },
+    "qualitypresets": {
+        "verylow": {
+            "crf": "28",
+            "preset": "veryfast",
+            "aqmode": "1",
+            "bitrate": "96k"
+        },
+        "low": {
+            "crf": "23",
+            "preset": "fast",
+            "aqmode": "2",
+            "bitrate": "128k"
+        },
+        "medium": {
+            "crf": "21",
+            "preset": "fast",
+            "aqmode": "3",
+            "bitrate": "160k"
+        },
+        "high": {
+            "crf": "18",
+            "preset": "medium",
+            "aqmode": "3",
+            "bitrate": "192k"
+        }
+    }
+}

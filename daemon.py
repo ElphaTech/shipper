@@ -4,26 +4,29 @@ import time
 import os
 import json
 import threading
-from collections import Counter
 import re
-import signal  # <-- Import the signal module
+import signal
 import shutil
 
-os.system('clear')
-print('Starting...')
+# Set working dir to script dir
+script_path = os.path.abspath(__file__)
+script_directory = os.path.dirname(script_path)
+os.chdir(script_directory)
 
-# == Config ==
-maxencodejobs = 1
-maxcopyjobs = 1
-maxframecountjobs = 2
+# == Import config ==
+with open('config.json') as f:
+    configdata = json.loads(f)
+maxencodejobs = configdata['joblimits']['encode']
+maxframecountjobs = configdata['joblimits']['framecount']
+qualitypresets = configdata['qualitypresets']
 
-# 🔑 Synchronization Lock: Protects the 'data' dictionary from concurrent access
+# Synchronization Lock: Protects the 'data' dictionary from concurrent access
 data_lock = threading.Lock()
 
-# 🛑 GRACEFUL STOP FLAG
+# GRACEFUL STOP FLAG
 stopping_flag = False
 
-# == Signal Handler Function ==
+currentjobs = []
 
 
 def signal_handler(sig, frame):
@@ -41,18 +44,6 @@ def signal_handler(sig, frame):
 
 # Register the signal handler for SIGINT (Ctrl+C)
 signal.signal(signal.SIGINT, signal_handler)
-
-# Set working dir to script dir
-script_path = os.path.abspath(__file__)
-script_directory = os.path.dirname(script_path)
-os.chdir(script_directory)
-
-currentjobs = []
-# "type": "encode" OR "copy" OR "framecount"
-# "uid": 1
-# "process": process (only for encode/copy)
-# "frames": total frames (only for encode)
-# "curframe": current frame (only for encode)
 
 
 def save_and_load_data(data: dict = None, filename: str = 'data.json'):
@@ -144,7 +135,10 @@ def get_frame_count(file_path: str) -> int | str:
         return f"Unexpected error: {e}"
 
 
-# New threaded function for frame counting
+def encode_file(infile, outfile, quality):
+    pass
+
+
 def threaded_frame_count(uid, input_file, data, currentjob_list):
     """Runs frame count and updates shared data structure upon completion."""
     frames_or_error = get_frame_count(input_file)
@@ -361,13 +355,10 @@ try:
 
         # == Stats / Current Job Counts ==
         currentencodejobs = 0
-        currentcopyjobs = 0
         currentframecountjobs = 0
         for currentjob in currentjobs:
             if currentjob['type'] == 'encode':
                 currentencodejobs += 1
-            elif currentjob['type'] == 'copy':
-                currentcopyjobs += 1
             elif currentjob['type'] == 'framecount':
                 currentframecountjobs += 1
 
@@ -499,10 +490,6 @@ try:
                             data[uid]["error"] = str(e)
                     finally:
                         pass
-
-            if currentcopyjobs < maxcopyjobs:
-                pass
-                # assign new copy job
 
         show_status(data, currentjobs)
         time.sleep(0.5)  # Add a small sleep to prevent 100% CPU usage

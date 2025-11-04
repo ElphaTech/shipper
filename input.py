@@ -4,12 +4,18 @@ import tmdbsimple as tmdb
 import re
 import dotenv
 from copy import deepcopy
-from pprint import pprint
 import time
 import json
 
 dotenv.load_dotenv()
 tmdb.API_KEY = os.getenv('TMDB_API_KEY')
+
+script_path = os.path.abspath(__file__)
+script_directory = os.path.dirname(script_path)
+with open(os.path.join(script_directory, "config.json")) as f:
+    qualities = tuple(
+        json.loads(f.read())['qualitypresets'].keys()
+    )
 
 output = []
 defaultjob = {
@@ -35,11 +41,13 @@ defaultjob = {
 
 
 def select_and_list_videos():
-    entries = sorted(
-        [e + '/' if os.path.isdir(e) else e
-         for e in os.listdir('.')
-         if not e.startswith('.') and (os.path.isdir(e) or e.endswith(('.mkv', '.mp4')))]
-    )
+    entries = sorted([
+        e + '/' if os.path.isdir(e) else e
+        for e in os.listdir('.')
+        if not e.startswith('.') and (
+            os.path.isdir(e) or e.endswith(('.mkv', '.mp4'))
+        )
+    ])
 
     selection = survey.routines.basket(
         'Select folders/files:', options=entries, view_max=None)
@@ -83,8 +91,8 @@ def get_media_info(media_id: int, media_type: str):
                 details['title'],
                 details['release_date'].split('-')[0]
             )
-    except Exception as e:
-        return ('', '')
+    except Exception:  # If anything goes wrong it is safe to return following
+        return ('', 0)
 
 
 def parse_episode_code(episode_code: str):
@@ -141,7 +149,6 @@ else:
 defaultjob['name'] = survey.routines.input('Name: ', value=sname)
 defaultjob['year'] = survey.routines.numeric(
     'Year: ', value=int(syear), decimal=False)
-qualities = ('low', 'medium', 'high')
 defaultjob['quality'] = qualities[survey.routines.select(
     'Quality: ', options=qualities)]
 
@@ -185,8 +192,8 @@ if defaultjob['type'] == 'tv':
             f'{output[-1]["name"]} ({output[-1]["year"]
                                      }) {{{output[-1]["id"]}}}',
             f'Season {int(season):02}',
-            f'{output[-1]["name"]} ({output[-1]["year"]
-                                     }) - {seasonepisodestr} - {episode_title}.mkv'
+            f'{output[-1]["name"]} ({output[-1]["year"]}) - {
+                seasonepisodestr} - {episode_title}.mkv'
         )
         output[-1]['name'] = f'{output[-1]['name']} - {seasonepisodestr}'
 

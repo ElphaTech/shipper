@@ -26,7 +26,7 @@ Make and activate a virtual environment. Then install the requirements.
 ```sh
 python -m venv venv
 source venv/bin/activate
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 Make a .env file with your TMDB API key.
