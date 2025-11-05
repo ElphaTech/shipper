@@ -1,22 +1,20 @@
 import survey
 import os
-import tmdbsimple as tmdb
 import re
-import dotenv
+import tmdbsimple as tmdb
 from copy import deepcopy
 import time
 import json
+from functions.tmdb_client import get_media_info, get_episode_title
+from functions.config import load_config
 
-dotenv.load_dotenv()
-tmdb.API_KEY = os.getenv('TMDB_API_KEY')
+CONFIG = load_config()
 
-script_path = os.path.abspath(__file__)
-script_directory = os.path.dirname(script_path)
-with open(os.path.join(script_directory, "config.json")) as f:
-    qualities = tuple(
-        json.loads(f.read())['qualitypresets'].keys()
-    )
+tmdb.API_KEY = CONFIG.tmdb_api_key
+tmdb.REQUESTS_TIMEOUT = 5
 
+qualities = tuple(CONFIG.quality_presets.keys())
+print(qualities, type(qualities))
 output = []
 defaultjob = {
     "id": "",
@@ -68,69 +66,12 @@ def select_and_list_videos():
     return files, full_files
 
 
-def get_media_info(media_id: int, media_type: str):
-    """
-    Fetch general info about a TV show or movie.
-    Returns a dict with:
-      - title
-      - year
-    """
-    try:
-        if media_type == 'tv':
-            tv = tmdb.TV(media_id)
-            details = tv.info()
-            return (
-                details['name'],
-                details['first_air_date'].split('-')[0]
-            )
-        elif media_type == 'movie':
-            # Fallback to movie if TV lookup fails
-            movie = tmdb.Movies(media_id)
-            details = movie.info()
-            return (
-                details['title'],
-                details['release_date'].split('-')[0]
-            )
-    except Exception:  # If anything goes wrong it is safe to return following
-        return ('', 0)
-
-
 def parse_episode_code(episode_code: str):
     """Return (season, episode) numbers from 'SxxExx', or (0, 0) if invalid."""
     match = re.search(r"[Ss](\d+)[Ee](\d+)", episode_code or "")
     if not match:
         return 0, 0
     return map(int, match.groups())
-
-
-def get_episode_or_movie_info(media_id: int, episode_code: str = None):
-    """
-    Returns a list of strings:
-    [season, episode, episode_title]
-    If info can't be found, returns empty strings for missing values.
-    """
-    season = episode = episode_title = ""
-
-    season_num, episode_num = parse_episode_code(episode_code)
-    if not season_num or not episode_num:
-        return [0, 0, ""]
-
-    try:
-        season_info = tmdb.TV_Seasons(media_id, season_num).info()
-        episode_data = next(
-            (ep for ep in season_info.get("episodes", [])
-             if ep.get("episode_number") == episode_num),
-            {}
-        )
-        season = season_num
-        episode = episode_num
-        episode_title = episode_data.get("name", "")
-    except Exception:
-        season = season_num
-        episode = episode_num
-        pass
-
-    return [season, episode, episode_title]
 
 
 # == MAIN LOGIC ==
@@ -167,20 +108,16 @@ if defaultjob['type'] == 'tv':
     for findex in range(len(full_files)):
         output.append(deepcopy(defaultjob))
         output[-1]['input_file'] = full_files[findex]
-        if ontmdb:
-            season, episode, episode_title = get_episode_or_movie_info(
-                tmdbid,
-                filenames[findex]
-            )
-        else:
-            season, episode = [
-                parse_episode_code(filenames[findex])
-            ]
-            episode_title = ''
 
+        season, episode = [
+            parse_episode_code(filenames[findex])
+        ]
         print(f'\n{filenames[findex]}')
+
         season = str(survey.routines.numeric('Season: ', value=season))
         episode = str(survey.routines.numeric('Episode: ', value=episode))
+        if ontmdb:
+            episode_title = get_episode_title(tmdbid, season, episode)
         episode_title = survey.routines.input(
             'Episode Title: ', value=episode_title)
 

@@ -1,31 +1,33 @@
 {
-    "joblimits": {
+    "input_dir": "",
+    "output_dir": "",
+    "job_limits": {
         "encode": 1,
-        "framecount": 2
+        "frame_count": 2
     },
-    "qualitypresets": {
-        "verylow": {
+    "quality_presets": {
+        "very_low": {
             "crf": "28",
             "preset": "veryfast",
-            "aqmode": "1",
+            "aq_mode": "1",
             "bitrate": "96k"
         },
         "low": {
             "crf": "23",
             "preset": "fast",
-            "aqmode": "2",
+            "aq_mode": "2",
             "bitrate": "128k"
         },
         "medium": {
             "crf": "21",
             "preset": "fast",
-            "aqmode": "3",
+            "aq_mode": "3",
             "bitrate": "160k"
         },
         "high": {
             "crf": "18",
             "preset": "medium",
-            "aqmode": "3",
+            "aq_mode": "3",
             "bitrate": "192k"
         }
     }

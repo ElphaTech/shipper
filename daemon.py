@@ -7,6 +7,7 @@ import threading
 import re
 import signal
 import shutil
+from functions.config import load_config
 
 # Set working dir to script dir
 script_path = os.path.abspath(__file__)
@@ -14,11 +15,10 @@ script_directory = os.path.dirname(script_path)
 os.chdir(script_directory)
 
 # == Import config ==
-with open('config.json') as f:
-    configdata = json.loads(f)
-maxencodejobs = configdata['joblimits']['encode']
-maxframecountjobs = configdata['joblimits']['framecount']
-qualitypresets = configdata['qualitypresets']
+CONFIG = load_config()
+maxencodejobs = CONFIG.max_encode_jobs
+maxframecountjobs = CONFIG.max_frame_count_jobs
+qualitypresets = CONFIG.quality_presets
 
 # Synchronization Lock: Protects the 'data' dictionary from concurrent access
 data_lock = threading.Lock()
@@ -72,6 +72,7 @@ def save_and_load_data(data: dict = None, filename: str = 'data.json'):
         print(f"An error occurred: {e}")
 
 
+@atexit.register
 def cleanup_subprocess():
     for curjob in currentjobs:
         process = curjob.get('process')
@@ -83,6 +84,14 @@ def cleanup_subprocess():
             except subprocess.TimeoutExpired:
                 print("Subprocess did not terminate gracefully, killing...")
                 process.kill()
+
+
+@atexit.register
+def print_all_errors():
+    for uid, job in data.items():
+        if job.get("status") == 'error':
+            print(f'Job {uid} failed due to :')
+            print(f'  {job.get("error", "Unknown")}')
 
 
 def get_frame_count(file_path: str) -> int | str:
@@ -244,12 +253,10 @@ def show_status(data, currentjobs):
             try:
                 print(f"{uid:>5} | {short} - {rest} | {
                     status:<18}: {data[uid]['error']:<24}")
-            except:
+            except Exception:
                 print(f"{uid:>5} | {short} - {rest} | {
                     status:<18}: Unknown")
 
-
-atexit.register(cleanup_subprocess)
 
 data = save_and_load_data()
 

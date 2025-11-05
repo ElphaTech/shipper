@@ -1,4 +1,8 @@
+# Exclude local data
 data.json
+# Configuration files to exclude from Git
+config.local.json
+.local.env
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -137,7 +141,6 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
 .envrc
 .venv
 env/
