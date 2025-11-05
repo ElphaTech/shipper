@@ -61,6 +61,7 @@ Todo
 ---
 <details>
 <summary>6/16 Complete</summary>
+    
 - [ ] Improve error handling:
     - [ ] Print errors on finish.
     - [x] Allow user to cancel job if failed last time.
