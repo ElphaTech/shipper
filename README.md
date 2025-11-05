@@ -59,6 +59,8 @@ Features
 
 Todo
 ---
+<details>
+<summary>6/16 Complete</summary>
 - [ ] Improve error handling:
     - [ ] Print errors on finish.
     - [x] Allow user to cancel job if failed last time.
@@ -77,6 +79,7 @@ Todo
     - [ ] Allow user to let daemon begin on startup.
     - [ ] Running status or input should trigger daemon to start.
 - [ ] `scp` jobs for automatically moving files to a different device.
+</details>
 
 # Plex file structure
 ```
