@@ -1,6 +1,6 @@
 import os
 import json
-import dotenv  # <-- ADDED
+import dotenv
 from pathlib import Path
 from typing import Dict, Any
 
@@ -8,12 +8,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_FILE_PATH = PROJECT_ROOT / "config.json"
 DOTENV_PATH = PROJECT_ROOT / ".env"
 
-# local config files just for me
+# local config files that are not pushed to github
 LOCAL_CONFIG_FILE_PATH = PROJECT_ROOT / "config.local.json"
 LOCAL_DOTENV_PATH = PROJECT_ROOT / ".local.env"
 if LOCAL_CONFIG_FILE_PATH.exists():
     CONFIG_FILE_PATH = LOCAL_CONFIG_FILE_PATH
-print(CONFIG_FILE_PATH, LOCAL_CONFIG_FILE_PATH)
 if LOCAL_DOTENV_PATH.exists():
     DOTENV_PATH = LOCAL_DOTENV_PATH
 
@@ -27,7 +26,6 @@ class Config:
         """Initializes the Config object from a dictionary of settings."""
 
         # --- 1. TMDB API Key (From Environment) ---
-        # os.getenv works because dotenv.load_dotenv() ran below
         self.tmdb_api_key: str = os.getenv('TMDB_API_KEY', '').strip()
         if not self.tmdb_api_key:
             # Using print() here is acceptable for a critical startup error

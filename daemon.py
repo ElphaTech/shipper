@@ -1,24 +1,26 @@
-import subprocess
 import atexit
-import time
 import os
-import json
-import threading
 import re
 import signal
-import shutil
-from functions.config import load_config
+import subprocess
+import threading
+import time
 
-# Set working dir to script dir
+from functions.config import PROJECT_ROOT, load_config
+from functions.file_handler import load_json, save_json
+
+# Set working directory to script directory
 script_path = os.path.abspath(__file__)
 script_directory = os.path.dirname(script_path)
 os.chdir(script_directory)
 
-# == Import config ==
+# == Import configuration ==
 CONFIG = load_config()
 maxencodejobs = CONFIG.max_encode_jobs
 maxframecountjobs = CONFIG.max_frame_count_jobs
 qualitypresets = CONFIG.quality_presets
+
+DATA_FILE_PATH = PROJECT_ROOT / "data.json"
 
 # Synchronization Lock: Protects the 'data' dictionary from concurrent access
 data_lock = threading.Lock()
@@ -36,40 +38,13 @@ def signal_handler(sig, frame):
         if stopping_flag:
             print("\nForce Exiting...")
             cleanup_subprocess()
-            os._exit(1)  # Force exit on second Ctrl+C
+            os._exit(1)
         else:
             stopping_flag = True
-            print("\n🛑 Stop signal received. Finishing current jobs before exit. Press Ctrl+C again to force quit.")
 
 
 # Register the signal handler for SIGINT (Ctrl+C)
 signal.signal(signal.SIGINT, signal_handler)
-
-
-def save_and_load_data(data: dict = None, filename: str = 'data.json'):
-    # ... (function remains unchanged)
-    try:
-        with open(filename, 'x') as f:
-            if data is not None:
-                f.write(json.dumps(data))
-                return data
-            else:
-                f.write('{}')
-                return {}
-    except FileExistsError:
-        try:
-            if data is not None:
-                with open(filename, 'w') as f:
-                    f.write(json.dumps(data))
-            else:
-                with open(filename, 'r') as f:
-                    data = json.loads(f.read())
-            return data
-        except Exception as e:
-            print(f"An error occurred: {e}")
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
 
 
 @atexit.register
@@ -95,12 +70,17 @@ def print_all_errors():
 
 
 def get_frame_count(file_path: str) -> int | str:
-    """Return total frame count of a video using ffprobe, or an error string on failure."""
+    """
+    Return total frame count of a video using ffprobe,
+    or an error string on failure.
+    """
     if not os.path.exists(file_path):
         return f"Error: File not found — {file_path}"
 
     def set_sigint_ignore():
-        """Sets the signal handler for SIGINT to ignore in the child."""
+        """
+        Sets the signal handler for SIGINT to ignore in the child.
+        """
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     try:
@@ -165,104 +145,43 @@ def threaded_frame_count(uid, input_file, data, currentjob_list):
             data[uid]["error"] = str(frames_or_error)
 
         # Remove the framecount job from the currentjobs list
-        job_to_remove = next(
-            (j for j in currentjob_list if j["uid"] == uid and j["type"] == "framecount"), None)
+        job_to_remove = next((
+            j for j in currentjob_list
+            if j["uid"] == uid and j["type"] == "framecount"), None
+        )
         if job_to_remove:
             currentjob_list.remove(job_to_remove)
 
 
 def read_progress(proc, job):
-    for line in proc.stdout:
-        if line.startswith("frame="):
-            try:
-                job["curframe"] = int(line.split("=")[1])
-            except ValueError:
-                pass
-        else:
+    frame_lines = [
+        line for line in proc.stdout if line.startswith("frame=")
+    ]
+
+    for line in frame_lines:
+        try:
+            curframe = int(line.split("=")[1])
+            job["curframe"] = curframe
+            with data_lock:
+                data[job['UID']]["current_frame"] = curframe
+
+        except ValueError:
             pass
-            # print(line)
+
     proc.stdout.close()
 
 
-def show_status(data, currentjobs):
-    os.system('clear')
-    now = time.time()
-
-    # Display the stop warning
-    with data_lock:
-        if stopping_flag:
-            print("--- WARNING: GRACEFUL STOP INITIATED (NO NEW JOBS WILL START) ---\n")
-
-    # Show and check disk space in GiB
-    total_disk, used_disk, free_disk = [
-        (i // (2**30)) for i in shutil.disk_usage("/")
-    ]
-    diskdecimal = used_disk/total_disk
-    useddiskcount = int(diskdecimal * 50)
-    useddiskstr = '#' * useddiskcount
-    freediskstr = ' ' * (50-useddiskcount)
-    print(f"Disk Space [{useddiskstr}{freediskstr}] {
-          (diskdecimal*100):5.1f}% {used_disk}/{total_disk}\n")
-
-    header = f"{'ID':<5} | {'Name':<25} | {
-        'Status':<18} | {'Progress':<12} | {'ETA':<8}"
-    print(header)
-    print("-" * len(header))
-
-    for uid, job in data.items():
-        status = job["status"]
-        progress = ""
-        eta = ""
-
-        if status == "encoding":
-            # The 'frames' count is now retrieved from the main 'data' dict
-            cj = next((j for j in currentjobs if j["uid"] == uid), None)
-            if cj and job.get("frames"):
-                frames, cur = job["frames"], cj["curframe"]
-
-                # Check to prevent division by zero or errors if data is incomplete
-                if frames and frames > 0:
-                    pct = (cur / frames) * 100
-                    progress = f"{pct:5.1f}%"
-
-                    if job.get("encode_start_time"):
-                        elapsed = now - job["encode_start_time"]
-                        if pct > 0.01:  # Check for progress > 0
-                            total_est = elapsed / (pct / 100)
-                            eta_sec = total_est - elapsed
-                            if eta_sec < 60:
-                                eta = f"{eta_sec:.0f}s"
-                            elif eta_sec < 3600:
-                                eta = f"{eta_sec/60:.1f}m"
-                            else:
-                                eta = f"{eta_sec/3600:.1f}h"
-                        else:
-                            eta = "..."
-            else:
-                progress = "N/A"
-                eta = "?"
-
-        name_len = 25
-        first, rest = job['name'].split(' - ', 1)
-        short = (first[:(name_len - 12)] +
-                 "...") if len(first) > name_len else first
-        if status != 'error':
-            print(f"{uid:>5} | {short} - {rest} | {
-                status:<18} | {progress:<12} | {eta:<8}")
-        else:
-            try:
-                print(f"{uid:>5} | {short} - {rest} | {
-                    status:<18}: {data[uid]['error']:<24}")
-            except Exception:
-                print(f"{uid:>5} | {short} - {rest} | {
-                    status:<18}: Unknown")
-
-
-data = save_and_load_data()
+data = load_json(DATA_FILE_PATH)
 
 # Remove old data
 print("Initiating data cleanup...")
 jobs_to_delete = []
+try:
+    os.remove('stop')
+except FileNotFoundError:
+    pass
+except Exception as e:
+    print(f"Unhandled error removing 'stop': {e}")
 
 # Ensure safe access to shared data structure using the lock
 with data_lock:
@@ -328,26 +247,25 @@ try:
         with data_lock:
             if os.path.exists('stop'):
                 stopping_flag = True
-                os.remove('stop')
             if os.path.exists('unstop'):
                 stopping_flag = False
+                os.remove('stop')
                 os.remove('unstop')
             if stopping_flag and not currentjobs:
                 print("Graceful stop complete. All jobs finished. Exiting...")
-                save_and_load_data(data)
+                save_json(DATA_FILE_PATH, data)
                 break  # Exit the while loop
 
         # == Load/Save Data ==
-        # NOTE: Using the lock here to protect 'data' while it's being written to from inputs
         for item in os.listdir('.'):
             if os.path.isfile(item) and re.fullmatch(r"input-\d+\.json", item):
-                inputdata = save_and_load_data(filename=item)
+                inputdata = save_json(DATA_FILE_PATH, data)
 
                 with data_lock:
                     nextuid = max((int(i) for i in data.keys()), default=0) + 1
                     for newjob in inputdata:
                         data[str(nextuid)] = newjob
-                        nextuid += 1  # increment for each new job
+                        nextuid += 1
 
                 try:
                     print(f"REMOVING {item}")
@@ -356,11 +274,10 @@ try:
                     print(f'Failed to remove {item} due to {e}')
 
         # -- Save Main Data --
-        # NOTE: Using the lock here to protect 'data' while it's being read/saved
         with data_lock:
-            save_and_load_data(data)
+            save_json(DATA_FILE_PATH, data)
 
-        # == Stats / Current Job Counts ==
+        # == Current Job Counts ==
         currentencodejobs = 0
         currentframecountjobs = 0
         for currentjob in currentjobs:
@@ -397,11 +314,9 @@ try:
                             data[uid]["error"] = f'{exitcode}: {
                                 exitcodes[exitcode]}'
                             currentjobs.remove(currentjob)
-            # Framecount jobs are cleaned up within the 'threaded_frame_count' function
+            # Framecount jobs are cleaned up within 'threaded_frame_count'
 
         # == Create Jobs ==
-
-        # 🛑 NEW JOB BLOCKER: Only proceed if not stopping
         with data_lock:
             can_create_new_jobs = not stopping_flag
 
@@ -413,8 +328,9 @@ try:
                 uid_to_count = None
                 with data_lock:
                     uid_to_count = next((
-                        k for k, v in data.items() if v.get("status") == "notstarted"),
-                        None)
+                        k for k, v in data.items()
+                        if v.get("status") == "notstarted"), None
+                    )
 
                 if uid_to_count:
                     # Update status and launch thread (outside lock since 'data' is accessed again)
@@ -498,10 +414,10 @@ try:
                     finally:
                         pass
 
-        show_status(data, currentjobs)
         time.sleep(0.5)  # Add a small sleep to prevent 100% CPU usage
 
 
 except Exception as e:
     # Catch any unexpected exceptions
+    print(f"\nAn unexpected error occurred: {e}")
     print(f"\nAn unexpected error occurred: {e}")

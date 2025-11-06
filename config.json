@@ -1,6 +1,7 @@
 {
     "input_dir": "",
     "output_dir": "",
+    "storage_buffer": 20,
     "job_limits": {
         "encode": 1,
         "frame_count": 2

@@ -14,7 +14,7 @@ tmdb.API_KEY = CONFIG.tmdb_api_key
 tmdb.REQUESTS_TIMEOUT = 5
 
 qualities = tuple(CONFIG.quality_presets.keys())
-print(qualities, type(qualities))
+
 output = []
 defaultjob = {
     "id": "",

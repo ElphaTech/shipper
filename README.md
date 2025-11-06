@@ -60,27 +60,47 @@ Features
 Todo
 ---
 <details>
-<summary>6/16 Complete</summary>
-    
-- [ ] Improve error handling:
-    - [ ] Print errors on finish.
-    - [x] Allow user to cancel job if failed last time.
-    - [x] If error code, then show the meaning of the error code.
-    - [x] Show errors on shipperd display.
+<summary>9/30 Complete</summary>
+
 - [ ] Allow flag for shutdown on complete.
 - [ ] Reorganise file structure to move functions to their own files.
-- [x] Add a configuration file containing settings for:
+    - [ ] daemon
+    - [ ] input
+    - [ ] status
+- [ ] Improve input.py
     - [ ] Input directory
     - [ ] Output directory
     - [ ] Allow custom output file name formats
-    - [x] Compression presets
-    - [x] Amount of jobs active at once
+    - [ ] Fix ctrl+c throwing 20 lines of error
+    - [ ] Finish tidying code
 - [ ] Prompt user for missing config.json & .env values when initially running input.py.
 - [ ] Separate daemon and status into distinct files to allow daemon to run fully as a background process.
+    - [x] Create status script.
+    - [ ] Consider moving to TUI frontend such as textualize which would allow it to run as webpage.
+    - [ ] Remove all printing from daemon.
+    - [ ] Change daemon printing to log file.
     - [ ] Allow user to let daemon begin on startup.
     - [ ] Running status or input should trigger daemon to start.
+- [ ] Allow editing of current jobs.
+- [ ] Add help/info command
 - [ ] `scp` jobs for automatically moving files to a different device.
+- [x] Improve error handling:
+    - [x] Print errors on finish.
+    - [x] Allow user to cancel job if failed last time.
+    - [x] If error code, then show the meaning of the error code.
+    - [x] Show errors on shipperd display.
+- [x] Add a configuration file containing settings for:
+    - [x] Compression presets
+    - [x] Amount of jobs active at once
 </details>
+
+# config.json Parameters
+
+`input_dir`: Full path to the directory where the input script will show files from.
+`output_dir`: Full path to the directory where finished jobs should be saved to.
+`storage_buffer`: The amount of GiB the program should leave free. Upon reaching this limit, it will not start any new jobs.
+`job_limits`: The amount of each type of job that can happen at once. If your system is more powerful, you can increase these.
+`quality_presets`: Preset quality values that you can choose between in the input program. For more information see the [FFmpeg docs](https://ffmpeg.org/ffmpeg-codecs.html)
 
 # Plex file structure
 ```

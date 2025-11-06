@@ -1,3 +1,4 @@
 survey
 tmdbsimple
 python-dotenv
+psutil
