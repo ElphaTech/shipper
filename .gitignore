@@ -3,6 +3,8 @@ data.json
 # Configuration files to exclude from Git
 config.local.json
 .local.env
+*.log
+input*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

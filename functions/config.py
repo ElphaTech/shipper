@@ -41,9 +41,10 @@ class Config:
             'quality_presets', {})
 
         # --- 4. Paths (Added default paths if you introduce them) ---
-        self.input_dir: Path = Path(raw_config.get('input_path', '.'))
+        self.input_dir: Path = Path(raw_config.get('input_dir', '.'))
+        print(raw_config.get('input_dir'))
         self.output_dir: Path = Path(
-            raw_config.get('output_path', './Encoded'))
+            raw_config.get('output_dir', './Encoded'))
 
 
 def load_config() -> Config:

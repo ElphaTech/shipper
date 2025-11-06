@@ -5,9 +5,11 @@ import signal
 import subprocess
 import threading
 import time
+from pathlib import Path
 
 from functions.config import PROJECT_ROOT, load_config
 from functions.file_handler import load_json, save_json
+import functions.logger
 
 # Set working directory to script directory
 script_path = os.path.abspath(__file__)
@@ -163,7 +165,7 @@ def read_progress(proc, job):
             curframe = int(line.split("=")[1])
             job["curframe"] = curframe
             with data_lock:
-                data[job['UID']]["current_frame"] = curframe
+                data[job['uid']]["current_frame"] = curframe
 
         except ValueError:
             pass
@@ -259,7 +261,7 @@ try:
         # == Load/Save Data ==
         for item in os.listdir('.'):
             if os.path.isfile(item) and re.fullmatch(r"input-\d+\.json", item):
-                inputdata = save_json(DATA_FILE_PATH, data)
+                inputdata = load_json(Path(item))
 
                 with data_lock:
                     nextuid = max((int(i) for i in data.keys()), default=0) + 1

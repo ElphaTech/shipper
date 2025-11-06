@@ -60,38 +60,31 @@ Features
 Todo
 ---
 <details>
-<summary>9/30 Complete</summary>
+<summary>4/21 Complete</summary>
 
-- [ ] Allow flag for shutdown on complete.
 - [ ] Reorganise file structure to move functions to their own files.
     - [ ] daemon
     - [ ] input
     - [ ] status
-- [ ] Improve input.py
-    - [ ] Input directory
-    - [ ] Output directory
+
+- [ ] input.py
+    - [x] Input directory
+    - [x] Output directory
     - [ ] Allow custom output file name formats
     - [ ] Fix ctrl+c throwing 20 lines of error
-    - [ ] Finish tidying code
-- [ ] Prompt user for missing config.json & .env values when initially running input.py.
-- [ ] Separate daemon and status into distinct files to allow daemon to run fully as a background process.
-    - [x] Create status script.
+- [x] daemon.py
+    - [x] Change daemon printing to log file.
+- [ ] status.py
     - [ ] Consider moving to TUI frontend such as textualize which would allow it to run as webpage.
-    - [ ] Remove all printing from daemon.
-    - [ ] Change daemon printing to log file.
-    - [ ] Allow user to let daemon begin on startup.
     - [ ] Running status or input should trigger daemon to start.
+- [ ] compress_file.sh
+    - [ ] Turn into python script.
+
+- [ ] Prompt user for missing config.json & .env values when initially running input.py.
 - [ ] Allow editing of current jobs.
+- [ ] Allow flag for shutdown on complete.
 - [ ] Add help/info command
 - [ ] `scp` jobs for automatically moving files to a different device.
-- [x] Improve error handling:
-    - [x] Print errors on finish.
-    - [x] Allow user to cancel job if failed last time.
-    - [x] If error code, then show the meaning of the error code.
-    - [x] Show errors on shipperd display.
-- [x] Add a configuration file containing settings for:
-    - [x] Compression presets
-    - [x] Amount of jobs active at once
 </details>
 
 # config.json Parameters
