@@ -5,6 +5,7 @@ config.local.json
 .local.env
 *.log
 input*.json
+*.flag
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

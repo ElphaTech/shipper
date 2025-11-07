@@ -1,9 +1,13 @@
 # shipper
 **shipper** is a utility with the purpose of making re-encoding and compressing of movies and TV shows easier. While it is built with Plex in mind, it can be used for anything. It is comprised of a daemon which can be run in the background and also acts as a dashboard for current jobs as well as a input script to safely add new jobs to the queue.
 
+
+> [!WARNING]
+> This repository is very much **work in progress**. Most commits will break previous versions. It is likely that many features will only partly work or not work at all.
+
 Requirements
 ---
-- ffmpeg
+- FFmpeg
 
 
 Installation & Usage
@@ -60,25 +64,31 @@ Features
 Todo
 ---
 <details>
-<summary>4/21 Complete</summary>
+<summary>4/27 Complete</summary>
 
+- [ ] Change flags (stop, unstop) to use .flag suffix to avoid committing.
 - [ ] Reorganise file structure to move functions to their own files.
     - [ ] daemon
     - [ ] input
     - [ ] status
 
 - [ ] input.py
-    - [x] Input directory
-    - [x] Output directory
     - [ ] Allow custom output file name formats
     - [ ] Fix ctrl+c throwing 20 lines of error
-- [x] daemon.py
-    - [x] Change daemon printing to log file.
+    - [ ] Potentially make part of status.py TUI
 - [ ] status.py
     - [ ] Consider moving to TUI frontend such as textualize which would allow it to run as webpage.
     - [ ] Running status or input should trigger daemon to start.
 - [ ] compress_file.sh
     - [ ] Turn into python script.
+        - [x] Checks if file exists
+        - [x] Checks valid preset & gets preset values
+        - [x] Check enough disk space
+        - [x] Fail job if output already exists
+        - [ ] If english audio exists, use it
+        - [ ] If english subs exist, use them
+        - [ ] Run ffmpeg
+        - [ ] Warn if output > input
 
 - [ ] Prompt user for missing config.json & .env values when initially running input.py.
 - [ ] Allow editing of current jobs.
