@@ -64,9 +64,9 @@ Features
 Todo
 ---
 <details>
-<summary>4/27 Complete</summary>
+<summary>9/29 Complete</summary>
 
-- [ ] Change flags (stop, unstop) to use .flag suffix to avoid committing.
+- [x] Change flags (stop, unstop) to use .flag suffix to avoid committing.
 - [ ] Reorganise file structure to move functions to their own files.
     - [ ] daemon
     - [ ] input
@@ -80,19 +80,21 @@ Todo
     - [ ] Consider moving to TUI frontend such as textualize which would allow it to run as webpage.
     - [ ] Running status or input should trigger daemon to start.
 - [ ] compress_file.sh
-    - [ ] Turn into python script.
+    - [x] Turn into python script.
         - [x] Checks if file exists
         - [x] Checks valid preset & gets preset values
         - [x] Check enough disk space
         - [x] Fail job if output already exists
-        - [ ] If english audio exists, use it
-        - [ ] If english subs exist, use them
-        - [ ] Run ffmpeg
+        - [x] If english audio exists, use it
+        - [x] If english subs exist, use them
+        - [x] Run ffmpeg
         - [ ] Warn if output > input
+- [ ] daemon.py
+    - [ ] Integrate new compression integration
+    - [ ] Move all ffmpeg to using external functions
 
 - [ ] Prompt user for missing config.json & .env values when initially running input.py.
 - [ ] Allow editing of current jobs.
-- [ ] Allow flag for shutdown on complete.
 - [ ] Add help/info command
 - [ ] `scp` jobs for automatically moving files to a different device.
 </details>

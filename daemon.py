@@ -7,9 +7,11 @@ import threading
 import time
 from pathlib import Path
 
+from functions.command_runner import run_terminal_command
+from functions.compressor import encode_video
 from functions.config import PROJECT_ROOT, load_config
 from functions.file_handler import load_json, save_json
-import functions.logger
+import functions.logger  # Needed for logging
 
 # Set working directory to script directory
 script_path = os.path.abspath(__file__)
@@ -27,7 +29,6 @@ DATA_FILE_PATH = PROJECT_ROOT / "data.json"
 # Synchronization Lock: Protects the 'data' dictionary from concurrent access
 data_lock = threading.Lock()
 
-# GRACEFUL STOP FLAG
 stopping_flag = False
 
 currentjobs = []
@@ -45,7 +46,6 @@ def signal_handler(sig, frame):
             stopping_flag = True
 
 
-# Register the signal handler for SIGINT (Ctrl+C)
 signal.signal(signal.SIGINT, signal_handler)
 
 
@@ -178,12 +178,14 @@ data = load_json(DATA_FILE_PATH)
 # Remove old data
 print("Initiating data cleanup...")
 jobs_to_delete = []
-try:
-    os.remove('stop')
-except FileNotFoundError:
-    pass
-except Exception as e:
-    print(f"Unhandled error removing 'stop': {e}")
+flags = ['stop.flag']
+for flag in flags:
+    try:
+        os.remove(flag)
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        print(f"Unhandled error removing {flag}: {e}")
 
 # Ensure safe access to shared data structure using the lock
 with data_lock:
@@ -247,12 +249,14 @@ try:
 
         # 🛑 PRIMARY EXIT CONDITION CHECK 🛑
         with data_lock:
-            if os.path.exists('stop'):
+            if os.path.exists('stop.flag'):
+                if not stopping_flag:
+                    print('Stopping flag enabled')
                 stopping_flag = True
-            if os.path.exists('unstop'):
+            else:
+                if stopping_flag:
+                    print('Stopping flag disabled')
                 stopping_flag = False
-                os.remove('stop')
-                os.remove('unstop')
             if stopping_flag and not currentjobs:
                 print("Graceful stop complete. All jobs finished. Exiting...")
                 save_json(DATA_FILE_PATH, data)
@@ -390,6 +394,7 @@ try:
                         })
 
                     try:
+                        print(f'Starting encoding job for {uid}')
                         os.makedirs(
                             os.path.dirname(data[uid]["encoded_file"]),
                             exist_ok=True)
