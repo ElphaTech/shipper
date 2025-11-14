@@ -156,6 +156,7 @@ if defaultjob['type'] == 'tv':
         season = str(survey.routines.numeric('Season: ', value=season))
         episode = str(survey.routines.numeric('Episode: ', value=episode))
         if ontmdb:
+            print('get from tmdb')
             episode_title = get_episode_title(tmdbid, season, episode)
         episode_title = survey.routines.input(
             'Episode Title: ', value=episode_title)

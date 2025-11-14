@@ -56,10 +56,11 @@ def get_episode_title(media_id: int, season_num: int, episode_num: int) -> str:
         season_info = tmdb.TV_Seasons(media_id, season_num).info()
         episode_title = next(
             (ep for ep in season_info.get("episodes", [])
-             if ep.get("episode_number") == episode_num),
+             if ep.get("episode_number") == int(episode_num)),
             {}
         ).get("name", "")
-    except Exception:
+    except Exception as e:
+        print(e)
         episode_title = ""
         pass
 
@@ -82,3 +83,6 @@ if __name__ == "__main__":
     # No year tv test
     title, year = get_media_info(media_id=8234, media_type='tv')
     print(f"Test Result (7 La - Missing year): {title} ({year})")
+
+    # Get title test...
+    print(get_episode_title(209867, '1', '12'))

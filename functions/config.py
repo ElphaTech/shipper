@@ -45,6 +45,9 @@ class Config:
         self.output_dir: Path = Path(
             raw_config.get('output_dir', './Encoded'))
 
+        # --- 5. Storage Buffer ---
+        self.buffer: float = raw_config.get('storage_buffer', 10)
+
 
 def load_config() -> Config:
     """

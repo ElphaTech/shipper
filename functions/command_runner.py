@@ -2,6 +2,7 @@ import subprocess
 import signal
 import shlex
 import os
+import re
 from typing import Union, List
 
 
@@ -10,7 +11,7 @@ def run_terminal_command(command: Union[str, List[str]]) -> str:
     Executes a terminal command and returns the combined stdout and stderr
     output as a single string.
 
-    This function handles both string commands (which are split safely) 
+    This function handles both string commands (which are split safely)
     and list-of-string commands (the preferred secure method).
 
     Args:
@@ -60,23 +61,16 @@ def run_terminal_command(command: Union[str, List[str]]) -> str:
         # 3. Check the return code and format the output
         if result.returncode != 0:
             # If the command failed, return a specific error message including stderr
-            return (
-                f"Command failed with exit code {result.returncode}:\n"
-                f"Command: {' '.join(command_list)}\n"
-                f"--- Standard Error ---\n{result.stderr.strip()
-                                           or 'No error output'}\n"
-                f"--- Standard Output ---\n{result.stdout.strip()
-                                            or 'No standard output'}"
+            return ''.join(
+                result.stderr.strip() or '',
+                result.stdout.strip() or ''
             )
         else:
-            # If successful, return the combined standard output
-            # We prioritize stdout but include stderr if it exists (e.g., for warnings)
             output = result.stdout.strip()
             if result.stderr:
-                output += f"\n\n[Warning: The command also produced the following standard error (stderr) output]:\n{
-                    result.stderr.strip()}"
+                output += result.stderr.strip()
 
-            return output if output else "Command executed successfully, but produced no output."
+            return output if output else ""
 
     except FileNotFoundError:
         # This occurs if the executable itself (the first item in the list) is not found
@@ -95,41 +89,67 @@ def run_ffmpeg_encode(
     subtitle_map
 ):
     with data_lock:
-        cmd = f"""
-ffmpeg -hide_banner -loglevel info -stats -progress pipe:1
--i {data[uid]["input_file"]}
--map 0:v:0
-{audio_map}
-{subtitle_map}
--c:v libx265
--preset {quality["preset"]}
--crf {quality["crf"]}
--x265-params "aq-mode={quality['aq_mode']}"
--c:a aac -b:a {quality['bitrate']}
--c:s copy
-{data[uid]["encoded_file"]}
-"""
-    shlex.split(cmd)
+        try:
+            # Construct the command as a list of strings
+            cmd = [
+                "ffmpeg",
+                "-hide_banner",
+                "-loglevel", "info",
+                "-stats",
+                "-progress", "pipe:1",
+                "-i", data[uid]["input_file"],
+                "-map", "0:v:0",
+            ]
+
+            if audio_map:
+                cmd.extend(audio_map.split())
+
+            if subtitle_map:
+                cmd.extend(subtitle_map.split())
+
+            cmd.extend([
+                "-c:v", "libx265",
+                "-preset", quality["preset"],
+                "-crf", str(quality["crf"]),
+                "-x265-params", f"aq-mode={quality['aq_mode']}",
+                "-c:a", "aac",
+                "-b:a", quality['bitrate'],
+                "-c:s", "copy",
+                "-err_detect", "aggressive",
+                "-fflags", "+genpts+discardcorrupt",
+                f"{data[uid]['encoded_file']}"
+            ])
+
+        except Exception as e:
+            data[uid]["status"] = "error"
+            data[uid]["error"] = e
+            return False
+
     process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         universal_newlines=True,
         bufsize=1
     )
 
     while True:
-        line = process.stderr.readline()
+        line = process.stdout.readline()
         if not line and process.poll() is not None:
             break
 
-        if line and line.startswith("frame="):
+        if line:
+            print(line)
             try:
-                curframe = int(line.split("=")[1])
+                match = re.search(r'frame=\s*(\d+)', line)
+                if match:
+                    curframe = int(match.group(1))
                 with data_lock:
                     data[uid]["current_frame"] = curframe
 
-            except ValueError:
+            except Exception as e:
+                # print(e)
+                # print(line)
                 pass
 
     # Wait for the process to fully finish and get the return code

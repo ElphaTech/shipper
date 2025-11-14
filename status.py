@@ -7,7 +7,7 @@ from functions.file_handler import load_json
 
 CONFIG = load_config()
 DATA_FILE_PATH = PROJECT_ROOT / "data.json"
-STOPPING_FLAG_FILE_PATH = PROJECT_ROOT / "stop"
+STOPPING_FLAG_FILE_PATH = PROJECT_ROOT / "stop.flag"
 
 # Loooop the following
 # 1) Load data.json
@@ -57,7 +57,6 @@ def format_time(seconds: int) -> str:
 
 
 def show_status(data):
-    os.system('clear')
     now = int(time.time())
 
     header = f"{'ID':<5} | {'Name':<25} | {
@@ -68,15 +67,17 @@ def show_status(data):
     for uid, job in data.items():
         status = job["status"]
         total_frames = job.get("frames", 0)
-        current_frames = job.get("current_frames", 0)
+        current_frames = job.get("current_frame", 0)
         progress = ""
         eta = ""
 
         if status == "encoding" and total_frames > 0:
             frames = job["frames"]
-            current_frames = job["current_frames"]
 
-            pct = (current_frames / frames) * 100
+            if current_frames == 0:
+                pct = 0.1
+            else:
+                pct = (current_frames / frames) * 100
             progress = f"{pct:5.1f}%"
 
             if (job.get("encode_start_time")
@@ -86,15 +87,19 @@ def show_status(data):
                 eta = format_time(total_est - elapsed)
 
         name_len = 25
-        first, rest = job['name'].split(' - ', 1)
-        short = (first[:(name_len - 12)] +
-                 "...") if len(first) > name_len else first
+        if job.get("type", "movie") == "tv":
+            first, rest = job['name'].split(' - ', 1)
+            short = (first[:(name_len - 12)] +
+                     "...") if len(first) > name_len else first
+            print_name = f"{short} - {rest}"
+        else:
+            print_name = job["name"][:name_len].rjust(name_len)
         if status != 'error':
-            print(f"{uid:>5} | {short} - {rest} | {
+            print(f"{uid:>5} | {print_name} | {
                 status:<18} | {progress:<12} | {eta:<8}")
         else:
             if data[uid].get('error'):
-                print(f"{uid:>5} | {short} - {rest} | {
+                print(f"{uid:>5} | {print_name} | {
                     status:<18}: {data[uid]['error']:<24}")
             else:
                 print(f"{uid:>5} | {short} - {rest} | {
@@ -103,6 +108,7 @@ def show_status(data):
 
 if __name__ == "__main__":
     while True:
+        os.system('clear')
 
         # Show stopping flag if applicable
         stopping_flag = STOPPING_FLAG_FILE_PATH.exists()
@@ -118,3 +124,6 @@ if __name__ == "__main__":
         # Show main data
         data = load_json(DATA_FILE_PATH)
         show_status(data)
+
+        # pause to stop crazy usage
+        time.sleep(0.5)

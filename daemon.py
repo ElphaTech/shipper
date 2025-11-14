@@ -12,6 +12,7 @@ from functions.compressor import encode_video
 from functions.config import PROJECT_ROOT, load_config
 from functions.file_handler import load_json, save_json
 import functions.logger  # Needed for logging
+import functions.job_creation as jc
 
 # Set working directory to script directory
 script_path = os.path.abspath(__file__)
@@ -31,7 +32,7 @@ data_lock = threading.Lock()
 
 stopping_flag = False
 
-currentjobs = []
+current_jobs = []
 
 
 def signal_handler(sig, frame):
@@ -51,7 +52,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 @atexit.register
 def cleanup_subprocess():
-    for curjob in currentjobs:
+    for curjob in current_jobs:
         process = curjob.get('process')
         if process and process.poll() is None:  # Check if process is running
             print("Terminating subprocess...")
@@ -69,108 +70,6 @@ def print_all_errors():
         if job.get("status") == 'error':
             print(f'Job {uid} failed due to :')
             print(f'  {job.get("error", "Unknown")}')
-
-
-def get_frame_count(file_path: str) -> int | str:
-    """
-    Return total frame count of a video using ffprobe,
-    or an error string on failure.
-    """
-    if not os.path.exists(file_path):
-        return f"Error: File not found — {file_path}"
-
-    def set_sigint_ignore():
-        """
-        Sets the signal handler for SIGINT to ignore in the child.
-        """
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-    try:
-        result = subprocess.run(
-            [
-                "ffprobe", "-v", "error",
-                "-select_streams", "v:0",
-                "-show_entries", "stream=nb_frames",
-                "-of", "default=nokey=1:noprint_wrappers=1", file_path
-            ],
-            capture_output=True, text=True, check=True,
-            preexec_fn=set_sigint_ignore
-        )
-        # Tries to get frame count from stream metadata
-        try:
-            frames = int(result.stdout.strip())
-            if frames > 0:
-                return frames
-        except ValueError:
-            pass  # Fallback to counting packets if stream data is missing
-
-        # Second attempt: count packets
-        result = subprocess.run(
-            [
-                "ffprobe", "-v", "error",
-                "-show_entries", "frame=pkt_pts_time",
-                "-select_streams", "v:0",
-                "-of", "csv=p=0", file_path
-            ],
-            capture_output=True, text=True, check=True,
-            preexec_fn=set_sigint_ignore
-        )
-        lines = result.stdout.count('\n')
-        if not lines:
-            return f"Error: Failed to retrieve frame data from {file_path}"
-        return lines
-
-    except subprocess.CalledProcessError as e:
-        return f"Error running ffprobe: {e}"
-    except Exception as e:
-        return f"Unexpected error: {e}"
-
-
-def encode_file(infile, outfile, quality):
-    pass
-
-
-def threaded_frame_count(uid, input_file, data, currentjob_list):
-    """Runs frame count and updates shared data structure upon completion."""
-    frames_or_error = get_frame_count(input_file)
-
-    # Use the lock to safely update the shared 'data' dictionary and remove job
-    with data_lock:
-        if type(frames_or_error) is int:
-            # Success
-            # Store total frames in 'data'
-            data[uid]["frames"] = frames_or_error
-            data[uid]["status"] = "ready_to_encode"  # Transition to ready
-        else:
-            # Failure
-            data[uid]["status"] = 'error'
-            data[uid]["error"] = str(frames_or_error)
-
-        # Remove the framecount job from the currentjobs list
-        job_to_remove = next((
-            j for j in currentjob_list
-            if j["uid"] == uid and j["type"] == "framecount"), None
-        )
-        if job_to_remove:
-            currentjob_list.remove(job_to_remove)
-
-
-def read_progress(proc, job):
-    frame_lines = [
-        line for line in proc.stdout if line.startswith("frame=")
-    ]
-
-    for line in frame_lines:
-        try:
-            curframe = int(line.split("=")[1])
-            job["curframe"] = curframe
-            with data_lock:
-                data[job['uid']]["current_frame"] = curframe
-
-        except ValueError:
-            pass
-
-    proc.stdout.close()
 
 
 data = load_json(DATA_FILE_PATH)
@@ -231,7 +130,8 @@ with data_lock:
                         pass
                 else:
                     job['status'] = 'notstarted'
-            if jobaction == 'd':
+                    job['error'] = ''
+            elif jobaction == 'd':
                 jobs_to_delete.append(uid)
             elif jobaction != 'i':
                 print('Unknown action. Ignoring.')
@@ -252,12 +152,13 @@ try:
             if os.path.exists('stop.flag'):
                 if not stopping_flag:
                     print('Stopping flag enabled')
+                    print(current_jobs)
                 stopping_flag = True
             else:
                 if stopping_flag:
                     print('Stopping flag disabled')
                 stopping_flag = False
-            if stopping_flag and not currentjobs:
+            if stopping_flag and not current_jobs:
                 print("Graceful stop complete. All jobs finished. Exiting...")
                 save_json(DATA_FILE_PATH, data)
                 break  # Exit the while loop
@@ -286,145 +187,53 @@ try:
         # == Current Job Counts ==
         currentencodejobs = 0
         currentframecountjobs = 0
-        for currentjob in currentjobs:
+        for currentjob in current_jobs:
             if currentjob['type'] == 'encode':
                 currentencodejobs += 1
             elif currentjob['type'] == 'framecount':
                 currentframecountjobs += 1
 
         # == Look at current jobs (Cleanup) ==
-        for currentjob in currentjobs:
-            if currentjob['type'] == 'encode':
-                uid = currentjob['uid']
-                try:
-                    exitcode = currentjob['process'].poll()
-                except Exception as e:
-                    print(f'bro its so jover: {e}')
-
-                if exitcode is not None:
-                    # Safely update shared 'data' dictionary
-                    with data_lock:
-                        if exitcode == 0:
-                            data[uid]['status'] = 'encoded'
-                            currentjobs.remove(currentjob)
-                        else:
-                            exitcodes = {
-                                2: "Input directory not given. This shouldn't be possible.",
-                                3: "Output directory not given. This shouldn't be possible.",
-                                7: "Input file does not exist. Please either stop the daemon and fix the path or remove the job and readd it with the input script.",
-                                4: "Invalid quality setting. This shouldn't be possible if you used the input script.",
-                                5: "Disk space too low. Please clear space.",
-                                6: "Unknown error. Normally due to ffmpeg being killed or ffmpeg failing."
-                            }
-                            data[uid]["status"] = 'error'
-                            data[uid]["error"] = f'{exitcode}: {
-                                exitcodes[exitcode]}'
-                            currentjobs.remove(currentjob)
-            # Framecount jobs are cleaned up within 'threaded_frame_count'
+        jobs_to_remove = [
+            t for t in current_jobs
+            if t["type"] == "encode"
+            and not t["thread"].is_alive()
+        ]
+        for job in jobs_to_remove:
+            job_uid = job["uid"]
+            with data_lock:
+                cur_status = data[job_uid]["status"]
+                if cur_status != "Error":
+                    data[job_uid]["status"] = "Encoded"
+            current_jobs.remove(job)
 
         # == Create Jobs ==
         with data_lock:
             can_create_new_jobs = not stopping_flag
 
         if can_create_new_jobs:
+            free_frame_count_jobs = max(
+                0, maxframecountjobs - currentframecountjobs)
+            available_frame_count_job_uids = jc.get_frame_count_jobs(
+                data, data_lock, free_frame_count_jobs)
+            for fc_job_uid in available_frame_count_job_uids:
+                jc.create_frame_count_job(
+                    fc_job_uid, data, data_lock, current_jobs
+                )
 
-            # 1. Start Frame Count Jobs (if capacity is available)
-            if currentframecountjobs < maxframecountjobs:
-                # Check for jobs that need frame counting (notstarted)
-                uid_to_count = None
-                with data_lock:
-                    uid_to_count = next((
-                        k for k, v in data.items()
-                        if v.get("status") == "notstarted"), None
-                    )
+            free_encode_jobs = max(
+                0, maxencodejobs - currentencodejobs)
+            available_encode_job_uids = jc.get_encode_jobs(
+                data, data_lock, free_encode_jobs
+            )
+            for encode_job_uid in available_encode_job_uids:
+                jc.create_encode_job(
+                    encode_job_uid, data, data_lock, current_jobs
+                )
 
-                if uid_to_count:
-                    # Update status and launch thread (outside lock since 'data' is accessed again)
-                    with data_lock:
-                        data[uid_to_count]["status"] = 'getting_frames'
-
-                        # Add job to currentjobs list
-                        currentjobs.append({
-                            "type": "framecount",
-                            "uid": uid_to_count,
-                            "thread": None  # Placeholder for thread object if needed
-                        })
-
-                        print(f'Starting frame count for UID {uid_to_count}')
-
-                        t = threading.Thread(
-                            target=threaded_frame_count,
-                            args=(
-                                uid_to_count,
-                                data[uid_to_count]["input_file"],
-                                data,
-                                currentjobs  # Pass currentjobs list to remove self on completion
-                            ),
-                            daemon=True
-                        )
-                        t.start()
-                        # Store the thread object
-                        currentjobs[-1]["thread"] = t
-
-            # 2. Start Encoding Jobs (if capacity is available)
-            if currentencodejobs < maxencodejobs:
-                # Check for jobs that are ready to encode (counting complete)
-                uid = None
-                with data_lock:
-                    uid = next((
-                        k for k, v in data.items() if v.get("status") == "ready_to_encode"),
-                        None)
-
-                if uid:
-                    # Total frames is now stored in data[uid]["frames"]
-                    frames = data[uid]["frames"]
-
-                    with data_lock:
-                        # Update status and launch subprocess
-                        data[uid]["status"] = 'encoding'
-                        data[uid]["job_start_time"] = int(time.time())
-                        data[uid]["encode_start_time"] = int(time.time())
-
-                        currentjobs.append({
-                            "type": "encode",
-                            "uid": uid,
-                            "frames": frames,
-                            "curframe": 0,
-                            "process": None
-                        })
-
-                    try:
-                        print(f'Starting encoding job for {uid}')
-                        os.makedirs(
-                            os.path.dirname(data[uid]["encoded_file"]),
-                            exist_ok=True)
-                        currentjobs[-1]["process"] = subprocess.Popen([
-                            "./compress_file.sh",
-                            data[uid]["input_file"],
-                            data[uid]["encoded_file"],
-                            data[uid]["quality"]
-                        ],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.DEVNULL,
-                            text=True,
-                            bufsize=1
-                        )
-                        threading.Thread(
-                            target=read_progress,
-                            args=(currentjobs[-1]["process"], currentjobs[-1]),
-                            daemon=True
-                        ).start()
-                    except Exception as e:
-                        with data_lock:
-                            data[uid]["status"] = 'error'
-                            data[uid]["error"] = str(e)
-                    finally:
-                        pass
-
-        time.sleep(0.5)  # Add a small sleep to prevent 100% CPU usage
+        time.sleep(0.5)
 
 
 except Exception as e:
     # Catch any unexpected exceptions
-    print(f"\nAn unexpected error occurred: {e}")
     print(f"\nAn unexpected error occurred: {e}")

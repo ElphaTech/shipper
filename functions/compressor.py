@@ -1,16 +1,8 @@
-# == PLAN ==
-# [x] Checks if input and output files exists
-# [x] Checks valid preset & gets preset values
-# [x] Check enough disk space
-# [ ] If english audio exists, use it
-# [ ] If english subs exist, use them
-# [ ] Run ffmpeg
-# [ ] Warn if output > input
 from pathlib import Path
 
-from config import load_config
-import disk_stats as ds
-from command_runner import run_terminal_command, run_ffmpeg_encode
+from .config import load_config
+from . import disk_stats as ds
+from .command_runner import run_terminal_command, run_ffmpeg_encode
 
 CONFIG = load_config()
 
@@ -54,22 +46,31 @@ def encode_video(uid, data, data_lock):
         quality_key = data[uid]["quality"]
 
     quality = verify_video_ready(input_path, output_path, quality_key)
+    if type(quality) is not dict:
+        with data_lock:
+            data[uid]["status"] = "error"
+            data[uid]["error"] = quality
+            return False
 
     # get audio
-    if run_terminal_command(f'''ffprobe -v error -select_streams a
--show_entries stream_tags=language -of default=
-noprint_wrappers=1:nokey=1 {input_path}''') == 'eng':
+    audio_lang = run_terminal_command(f'''ffprobe -v error -select_streams a
+-show_entries stream_tags=language -of default=noprint_wrappers=1:nokey=1 {input_path}''').strip()
+    if audio_lang == 'eng':
         audio_map = "-map 0:a:m:language:eng"
-    else:
+    elif audio_lang != '':
         audio_map = "-map 0:a:0"
+    else:
+        audio_map = ""
 
     # get subtitles
-    if run_terminal_command(f'''ffprobe -v error -select_streams s
--show_entries stream_tags=language -of default=
-noprint_wrappers=1:nokey=1 {input_path}''') == 'eng':
+    sub_lang = run_terminal_command(
+        f'''ffprobe -v error -select_streams s -show_entries stream_tags=language -of default=noprint_wrappers=1:nokey=1 {input_path}''').strip()
+    if sub_lang == 'eng':
         subtitle_map = "-map 0:s:m:language:eng"
-    else:
+    elif sub_lang != '':
         subtitle_map = "-map 0:s:0"
+    else:
+        subtitle_map = ''
 
     return run_ffmpeg_encode(
         uid,
@@ -79,7 +80,3 @@ noprint_wrappers=1:nokey=1 {input_path}''') == 'eng':
         audio_map,
         subtitle_map
     )
-
-
-if __name__ == '__main__':
-    pass
