@@ -6,6 +6,10 @@
         "encode": 1,
         "frame_count": 2
     },
+    "site": {
+        "host": "localhost",
+        "port": 8932
+    },
     "quality_presets": {
         "very_low": {
             "crf": "28",

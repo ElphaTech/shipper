@@ -2,3 +2,5 @@ survey
 tmdbsimple
 python-dotenv
 psutil
+textual
+textual-serve

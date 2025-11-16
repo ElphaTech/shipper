@@ -139,7 +139,6 @@ def run_ffmpeg_encode(
             break
 
         if line:
-            print(line)
             try:
                 match = re.search(r'frame=\s*(\d+)', line)
                 if match:

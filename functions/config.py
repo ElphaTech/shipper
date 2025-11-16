@@ -7,6 +7,7 @@ from typing import Dict, Any
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_FILE_PATH = PROJECT_ROOT / "config.json"
 DOTENV_PATH = PROJECT_ROOT / ".env"
+DATA_FILE_PATH = PROJECT_ROOT / "data.json"
 
 # local config files that are not pushed to github
 LOCAL_CONFIG_FILE_PATH = PROJECT_ROOT / "config.local.json"
@@ -47,6 +48,24 @@ class Config:
 
         # --- 5. Storage Buffer ---
         self.buffer: float = raw_config.get('storage_buffer', 10)
+
+        # --- 6. Textual Table Columns
+        self.textual_columns: list = raw_config.get('textual_columns', [
+            "name",
+            "status",
+            "percentage",
+            "eta"
+        ])
+        self.textual_overview_columns: list = raw_config.get(
+            'textual_overview_columns', [
+                "name",
+                "progress",
+                "status"
+            ]
+        )
+
+        # --- 7. Site settings ---
+        self.site: list = raw_config.get("site", ["localhost", 8932]).values()
 
 
 def load_config() -> Config:

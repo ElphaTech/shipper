@@ -45,10 +45,22 @@ TMDB_API_KEY=putyourkeyhere
 
 Set input and output paths in config.json
 
-Navigate up to your media directory. Activate the venv and run the input script.
+Navigate to the shipper directory. Activate the venv and run the input script.
 ```sh
-source shipper/venv/bin/activate
-python shipper/input.py
+source venv/bin/activate
+python input.py
+```
+
+Once you have added an input you can track it either in the terminal or on a website.
+
+**Terminal:**
+```sh
+python tui.py
+```
+
+**Website: (http://localhost:8932/)
+```sh
+python tui_server.py
 ```
 
 
