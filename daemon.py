@@ -203,7 +203,7 @@ try:
             job_uid = job["uid"]
             with data_lock:
                 cur_status = data[job_uid]["status"]
-                if cur_status != "Error":
+                if cur_status.lower() != "error":
                     data[job_uid]["status"] = "Encoded"
             current_jobs.remove(job)
 
