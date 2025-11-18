@@ -77,7 +77,7 @@ def run_terminal_command(command: Union[str, List[str]]) -> str:
         return f"Error: Command executable not found: '{command_list[0]}'. Check your PATH."
     except Exception as e:
         # Catch any unexpected errors during execution setup
-        return f"Unexpected error during command execution: {e}"
+        return f"Error: Unexpected error during command execution: {e}"
 
 
 def run_ffmpeg_encode(

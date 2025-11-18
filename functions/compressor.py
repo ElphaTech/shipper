@@ -53,9 +53,17 @@ def encode_video(uid, data, data_lock):
             return False
 
     # get audio
-    audio_lang = run_terminal_command(f'''ffprobe -v error -select_streams a
--show_entries stream_tags=language -of default=noprint_wrappers=1:nokey=1 {input_path}''').strip()
-    if audio_lang == 'eng':
+    audio_lang = run_terminal_command(f'''
+ffprobe -v error -select_streams a
+-show_entries stream_tags=language
+-of default=noprint_wrappers=1:nokey=1 "{input_path}"
+'''.strip())
+    if audio_lang.startswith("Error"):
+        with data_lock:
+            data[uid]["status"] = "error"
+            data[uid]["error"] = quality
+            return False
+    elif audio_lang == 'eng':
         audio_map = "-map 0:a:m:language:eng"
     elif audio_lang != '':
         audio_map = "-map 0:a:0"
@@ -63,8 +71,16 @@ def encode_video(uid, data, data_lock):
         audio_map = ""
 
     # get subtitles
-    sub_lang = run_terminal_command(
-        f'''ffprobe -v error -select_streams s -show_entries stream_tags=language -of default=noprint_wrappers=1:nokey=1 {input_path}''').strip()
+    sub_lang = run_terminal_command(f'''
+ffprobe -v error -select_streams s
+-show_entries stream_tags=language
+-of default=noprint_wrappers=1:nokey=1 "{input_path}"
+'''.strip())
+    if audio_lang.startswith("Error"):
+        with data_lock:
+            data[uid]["status"] = "error"
+            data[uid]["error"] = quality
+            return False
     if sub_lang == 'eng':
         subtitle_map = "-map 0:s:m:language:eng"
     elif sub_lang != '':
