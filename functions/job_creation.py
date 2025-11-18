@@ -12,7 +12,7 @@ def get_frame_count_jobs(data, data_lock, max_jobs):
     with data_lock:
         uids = [
             k for k, v in data.items()
-            if v.get("status") == "notstarted"
+            if v.get("status") == "not_started"
         ][:max_jobs]
     return uids
 

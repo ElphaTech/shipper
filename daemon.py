@@ -95,11 +95,11 @@ with data_lock:
         if status in ["encoded", "copied"]:
             jobs_to_delete.append(uid)
 
-        # 2. Reset jobs interrupted to 'notstarted'
+        # 2. Reset jobs interrupted to 'not_started'
         elif status == "getting_frames":
             print(f"Resetting interrupted job {
-                  uid} ({job.get('name', 'N/A')}) to 'notstarted'.")
-            job["status"] = "notstarted"
+                  uid} ({job.get('name', 'N/A')}) to 'not_started'.")
+            job["status"] = "not_started"
         elif status == "encoding":
             print(f"Resetting interrupted job {
                   uid} ({job.get('name', 'N/A')}) to 'ready_to_encode'.")
@@ -129,7 +129,7 @@ with data_lock:
                         print(f'Failed to remove due to error: {e}')
                         pass
                 else:
-                    job['status'] = 'notstarted'
+                    job['status'] = 'not_started'
                     job['error'] = ''
             elif jobaction == 'd':
                 jobs_to_delete.append(uid)
@@ -204,7 +204,7 @@ try:
             with data_lock:
                 cur_status = data[job_uid]["status"]
                 if cur_status.lower() != "error":
-                    data[job_uid]["status"] = "Encoded"
+                    data[job_uid]["status"] = "encoded"
             current_jobs.remove(job)
 
         # == Create Jobs ==
