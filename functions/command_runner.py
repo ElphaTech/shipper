@@ -24,13 +24,16 @@ def run_terminal_command(command: Union[str, List[str]]) -> str:
     """
 
     # 1. Safely parse the command if it's provided as a string
-    if isinstance(command, str):
-        # shlex.split safely handles quotes and spaces in arguments
-        command_list = shlex.split(command)
-    elif isinstance(command, list):
-        command_list = command
-    else:
-        return f"Error: Invalid command format. Expected string or list, got {type(command).__name__}."
+    try:
+        if isinstance(command, str):
+            # shlex.split safely handles quotes and spaces in arguments
+            command_list = shlex.split(command)
+        elif isinstance(command, list):
+            command_list = command
+        else:
+            return f"Error: Invalid command format. Expected string or list, got {type(command).__name__}."
+    except Exception as e:
+        return f"Error: {e}"
 
     if not command_list:
         return "Error: Command list is empty."

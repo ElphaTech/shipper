@@ -61,7 +61,7 @@ ffprobe -v error -select_streams a
     if audio_lang.startswith("Error"):
         with data_lock:
             data[uid]["status"] = "error"
-            data[uid]["error"] = quality
+            data[uid]["error"] = audio_lang
             return False
     elif audio_lang == 'eng':
         audio_map = "-map 0:a:m:language:eng"
@@ -76,10 +76,10 @@ ffprobe -v error -select_streams s
 -show_entries stream_tags=language
 -of default=noprint_wrappers=1:nokey=1 "{input_path}"
 '''.strip())
-    if audio_lang.startswith("Error"):
+    if sub_lang.startswith("Error"):
         with data_lock:
             data[uid]["status"] = "error"
-            data[uid]["error"] = quality
+            data[uid]["error"] = sub_lang
             return False
     if sub_lang == 'eng':
         subtitle_map = "-map 0:s:m:language:eng"
