@@ -27,7 +27,7 @@ defaultjob = {
     "year": "",
     "quality": "",
     "type": "",
-    "status": "notstarted",
+    "status": "not_started",
     "input_file": "",
     "encoded_file": "",
     "before_size": 0,

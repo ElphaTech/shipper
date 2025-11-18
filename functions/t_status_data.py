@@ -136,7 +136,7 @@ def get_overview_data_table(
         output_table[job_id]["total"] += 1
         if job["status"] == 'not_started':
             output_table[job_id]["not_started"] += 1
-        elif job["status"] == "Encoded":
+        elif job["status"] == "encoded":
             output_table[job_id]["encoded"] += 1
     for job_id in output_table:
         try:
