@@ -57,15 +57,15 @@ def encode_video(uid, data, data_lock):
 ffprobe -v error -select_streams a
 -show_entries stream_tags=language
 -of default=noprint_wrappers=1:nokey=1 "{input_path}"
-'''.strip())
-    if audio_lang.startswith("Error"):
+''').split()
+    if "Error:" in audio_lang:
         with data_lock:
             data[uid]["status"] = "error"
             data[uid]["error"] = audio_lang
             return False
-    elif audio_lang == 'eng':
+    elif 'eng' in audio_lang:
         audio_map = "-map 0:a:m:language:eng"
-    elif audio_lang != '':
+    elif len(audio_lang) > 0:
         audio_map = "-map 0:a:0"
     else:
         audio_map = ""
@@ -75,15 +75,15 @@ ffprobe -v error -select_streams a
 ffprobe -v error -select_streams s
 -show_entries stream_tags=language
 -of default=noprint_wrappers=1:nokey=1 "{input_path}"
-'''.strip())
-    if sub_lang.startswith("Error"):
+''').split()
+    if "Error:" in sub_lang:
         with data_lock:
             data[uid]["status"] = "error"
             data[uid]["error"] = sub_lang
             return False
-    if sub_lang == 'eng':
+    if 'eng' in sub_lang:
         subtitle_map = "-map 0:s:m:language:eng"
-    elif sub_lang != '':
+    elif len(sub_lang) > 0:
         subtitle_map = "-map 0:s:0"
     else:
         subtitle_map = ''
