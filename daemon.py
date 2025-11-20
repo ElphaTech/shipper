@@ -13,6 +13,9 @@ from functions.config import PROJECT_ROOT, load_config
 from functions.file_handler import load_json, save_json
 import functions.logger  # Needed for logging
 import functions.job_creation as jc
+from functions.flags import (
+    ALL_FLAGS, get_flag_creation_time, remove_flag, get_active_flags
+)
 
 # Set working directory to script directory
 script_path = os.path.abspath(__file__)
@@ -34,6 +37,8 @@ stopping_flag = False
 
 current_jobs = []
 
+current_flags = []
+
 
 def signal_handler(sig, frame):
     global stopping_flag
@@ -43,8 +48,6 @@ def signal_handler(sig, frame):
             print("\nForce Exiting...")
             cleanup_subprocess()
             os._exit(1)
-        else:
-            stopping_flag = True
 
 
 signal.signal(signal.SIGINT, signal_handler)
@@ -74,18 +77,14 @@ def print_all_errors():
 
 data = load_json(DATA_FILE_PATH)
 
-# Remove old data
-print("Initiating data cleanup...")
-jobs_to_delete = []
-flags = ['stop.flag']
+# == REMOVE FLAGS ==
+flags = ALL_FLAGS
+print(f"Removing ALL flags: {ALL_FLAGS}")
 for flag in flags:
-    try:
-        os.remove(flag)
-    except FileNotFoundError:
-        pass
-    except Exception as e:
-        print(f"Unhandled error removing {flag}: {e}")
+    remove_flag(flag)
 
+print("Cleaning up data.json")
+jobs_to_delete = []
 # Ensure safe access to shared data structure using the lock
 with data_lock:
     for uid, job in data.items():
@@ -145,23 +144,30 @@ print("Data cleanup complete.")
 
 
 try:
-    while True:
+    while not stopping_flag or current_jobs:
+        # == Flag handling ==
+        # -- Print new flags --
+        new_current_flags = get_active_flags()
 
-        # 🛑 PRIMARY EXIT CONDITION CHECK 🛑
+        new_flags = set(new_current_flags) - set(current_flags)
+        removed_flags = set(current_flags) - set(new_current_flags)
+
+        if new_flags:
+            print("Flag(s) enabled:", new_flags)
+        if removed_flags:
+            print("Flags(s) disabled:", removed_flags)
+
+        current_flags = new_current_flags
+
+        # -- Act on flags --
         with data_lock:
-            if os.path.exists('stop.flag'):
-                if not stopping_flag:
-                    print('Stopping flag enabled')
-                    print(current_jobs)
+            stopping_flag = 'safe_stop_daemon' in current_flags
+            if 'quick_stop_daemon' in current_flags:
                 stopping_flag = True
-            else:
-                if stopping_flag:
-                    print('Stopping flag disabled')
-                stopping_flag = False
-            if stopping_flag and not current_jobs:
-                print("Graceful stop complete. All jobs finished. Exiting...")
-                save_json(DATA_FILE_PATH, data)
-                break  # Exit the while loop
+                current_jobs = []
+
+        if 'start_daemon' in current_flags:
+            remove_flag('start_daemon')
 
         # == Load/Save Data ==
         for item in os.listdir('.'):
@@ -232,6 +238,10 @@ try:
                 )
 
         time.sleep(0.5)
+
+    # On Closing
+    print("Graceful stop complete. All jobs finished. Exiting...")
+    save_json(DATA_FILE_PATH, data)
 
 
 except Exception as e:
