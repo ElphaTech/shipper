@@ -6,7 +6,13 @@ They are always found in the root directory of the project.
 
 from pathlib import Path
 
-from .config import load_config, PROJECT_ROOT
+from .config import PROJECT_ROOT
+
+ALL_FLAGS = [
+    'start_daemon',
+    'safe_stop_daemon',
+    'quick_stop_daemon',
+]
 
 
 def flag_name_to_path(flag_name: str) -> Path:

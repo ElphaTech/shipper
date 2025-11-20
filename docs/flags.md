@@ -2,6 +2,15 @@
 All flags are empty files with a .flag suffix.
 They are always found in the root directory of the project.
 
+> [!WARNING]
+> Flags are cleared upon starting the daemon. Therefore all permanent settings should be stored in `config.json`.
+
+# All flags
+To get a list of all flags, get the `ALL_FLAGS` variable from `functions/flags.py`.
+Here is an explanation of what each one does.
+- `start_daemon`: Starts a daemon process if none currently exist. Be warned that it does take >5 seconds to take effect.
+- `safe_stop_daemon`: Safely stops the currently running daemon process by making it wait until it completes all current jobs and then quitting.
+- `quick_stop_daemon`: Stops daemon by getting it to immediately kill itself. WARNING: THIS WILL CAUSE ALL CURRENTLY RUNNING JOBS TO FAIL.
 
 # Functions
 `functions/flags.py` contains some helpful functions to assist with flags. Here is each one.
