@@ -1,6 +1,41 @@
 import tmdbsimple as tmdb
 
 
+def search_media_by_title(media_title: str, media_type: str) -> list[tmdb.tv.TV] | list[tmdb.movies.Movies]:
+    """
+    Search TMDB for media by title
+
+    Returns:
+        List of possible TMDB matches
+    """
+    try:
+        tmdb_objects = []
+
+        if media_type == 'tv':
+            results = tmdb.Search().tv(query=media_title)
+            for result in results.get('results', []):
+                media_id = result['id']
+                tmdb_object = tmdb.TV(media_id)
+                tmdb_objects.append(tmdb_object)
+            
+            return tmdb_objects
+        
+        elif media_type == 'movie':
+            results = tmdb.Search().movie(query=media_title)
+            for result in results.get('results', []):
+                media_id = result['id']
+                tmdb_object = tmdb.Movies(media_id)
+                tmdb_objects.append(tmdb_object)
+            
+            return tmdb_objects
+        
+        else:
+            return []   # Handle unexpected media_type
+        
+    except Exception:
+        return []
+
+
 def get_media_info(media_id: int, media_type: str) -> tuple[str, int]:
     """
     Fetch general info (title and year) about a TV show or movie from TMDB.
