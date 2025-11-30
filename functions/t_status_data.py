@@ -140,8 +140,8 @@ def get_overview_data_table(
             output_table[job_id]["encoded"] += 1
     for job_id in output_table:
         try:
-            output_table[job_id]["progress"] = f'{
-                output_table[job_id]["encoded"]}/{output_table[job_id]["total"]}'
+            output_table[job_id]["progress"] = \
+                f'{output_table[job_id]["encoded"]}/{output_table[job_id]["total"]}'
             pct = output_table[job_id]["encoded"]/output_table[job_id]["total"]
             if pct == 0:
                 output_table[job_id]["status"] = "Not Started"

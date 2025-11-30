@@ -77,8 +77,7 @@ def load_config() -> Config:
         dotenv.load_dotenv(DOTENV_PATH)
     except Exception as e:
         # Handle cases where the .env file might not exist or be readable
-        print(f"Warning: Could not load .env file from {
-              DOTENV_PATH}. Error: {e}")
+        print(f"Warning: Could not load .env file from {DOTENV_PATH}. Error: {e}")
 
     raw_config_data = {}
 
@@ -87,8 +86,7 @@ def load_config() -> Config:
             with open(CONFIG_FILE_PATH, 'r') as f:
                 raw_config_data = json.load(f)
         except json.JSONDecodeError:
-            print(f"Error: Could not parse {
-                  CONFIG_FILE_PATH}. Check JSON syntax.")
+            print(f"Error: Could not parse {CONFIG_FILE_PATH}. Check JSON syntax.")
         except Exception as e:
             print(f"Error reading config file: {e}")
 

@@ -96,12 +96,10 @@ with data_lock:
 
         # 2. Reset jobs interrupted to 'not_started'
         elif status == "getting_frames":
-            print(f"Resetting interrupted job {
-                  uid} ({job.get('name', 'N/A')}) to 'not_started'.")
+            print(f"Resetting interrupted job {uid} ({job.get('name', 'N/A')}) to 'not_started'.")
             job["status"] = "not_started"
         elif status == "encoding":
-            print(f"Resetting interrupted job {
-                  uid} ({job.get('name', 'N/A')}) to 'ready_to_encode'.")
+            print(f"Resetting interrupted job {uid} ({job.get('name', 'N/A')}) to 'ready_to_encode'.")
             job["status"] = "ready_to_encode"
             try:
                 os.remove(job['encoded_file'])
