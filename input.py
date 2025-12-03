@@ -166,25 +166,25 @@ if defaultjob['type'] == 'tv':
         # OUTPUT: pathtocd/Name (Year) {ID} OUTPUT/Season --/
         #         Name (Year) - s00e00 - EpName \[info\].ext
         seasonepisodestr = f's{int(season):02}e{int(episode):02}'
-        output[-1]['encoded_file'] = OUTPUT_DIR / f'{
-            output[-1]["name"]} ({output[-1]["year"]
-                                  }) {{{output[-1]["id"]}}}' / \
-            f'Season {int(season):02}' / \
-            f'{output[-1]["name"]} ({output[-1]["year"]}) - {
-                seasonepisodestr} - {episode_title}.mkv'
+        output[-1]['encoded_file'] = (
+            OUTPUT_DIR / 
+            f'{output[-1]["name"]} ({output[-1]["year"]}) {{{output[-1]["id"]}}}' /
+            f'Season {int(season):02}' /
+            f'{output[-1]["name"]} ({output[-1]["year"]}) - {seasonepisodestr} - {episode_title}.mkv'
+        )
         output[-1]['encoded_file'] = str(output[-1]['encoded_file'])
-        output[-1]['name'] = f'{output[-1]['name']} - {seasonepisodestr}'
+        output[-1]['name'] = f'{output[-1]["name"]} - {seasonepisodestr}'
 
 # == MOVIE ==
 else:
     if len(filenames) == 1:  # must be movie file
         output.append(deepcopy(defaultjob))
         output[-1]['input_file'] = full_files[0]
-        output[-1]['encoded_file'] = OUTPUT_DIR / \
-            f'{output[-1]["name"]} ({output[-1]["year"]}) {{{
-                output[-1]["id"]}}}{
-            output[-1]["name"]} ({output[-1]["year"]}) {{{
-            output[-1]["id"]}}}.mkv'
+        output[-1]['encoded_file'] = (
+            OUTPUT_DIR /
+            f'{output[-1]["name"]} ({output[-1]["year"]}) {{{output[-1]["id"]}}}' /
+            f'{output[-1]["name"]} ({output[-1]["year"]}) {{{output[-1]["id"]}}}.mkv'
+        )
         output[-1]['encoded_file'] = str(output[-1]['encoded_file'])
     else:
         full_files.sort(key=lambda f: os.path.getsize(f), reverse=True)
@@ -196,11 +196,10 @@ else:
         # Main file
         output.append(deepcopy(defaultjob))
         output[-1]['input_file'] = biggest
-        middle_segment = f'{output[-1]["name"]} ({
-            output[-1]["year"]}) {
-            {{output[-1]["id"]}}}{
-            output[-1]["name"]} ({output[-1]["year"]}) {
-            {{output[-1]["id"]}}}.mkv'
+        middle_segment = (
+            f'{output[-1]["name"]} ({output[-1]["year"]}) {{{output[-1]["id"]}}}' /
+            f'{output[-1]["name"]} ({output[-1]["year"]}) {{{output[-1]["id"]}}}.mkv'
+        )
         output[-1]['encoded_file'] = OUTPUT_DIR / middle_segment
         output[-1]['encoded_file'] = str(output[-1]['encoded_file'])
 
@@ -209,8 +208,7 @@ else:
             output.append(deepcopy(defaultjob))
             output[-1]['input_file'] = f
 
-            middle_segment = f'{
-                output[-1]["name"]} ({output[-1]["year"]}) {{{output[-1]["id"]}}}'
+            middle_segment = f'{output[-1]["name"]} ({output[-1]["year"]}) {{{output[-1]["id"]}}}'
             final_file_name = Path(f).name
             output[-1]['encoded_file'] = OUTPUT_DIR / \
                 middle_segment / 'extras' / final_file_name
