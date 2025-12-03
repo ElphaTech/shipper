@@ -36,6 +36,58 @@ def search_media_by_title(media_title: str, media_type: str) -> list[tmdb.tv.TV]
         return []
 
 
+def fetch_tmdb_object_details(media_id: int, media_type: str) -> dict:
+    """
+    Retrieve TMDB info() result for either TV or Movie.
+    Returns {} on failure.
+    """
+    try:
+        if media_type == "tv":
+            return tmdb.TV(media_id).info()
+
+        elif media_type == "movie":
+            return tmdb.Movies(media_id).info()
+
+        return {}
+
+    except Exception:
+        return {}
+
+def parse_media_details(details: dict, media_type: str) -> tuple[str, int]:
+    """
+    Extract (title, year) from a TMDB details dict.
+    """
+    if not details:
+        return ("", 0)
+
+    # TV → first_air_date, Movie → release_date
+    date_key = "first_air_date" if media_type == "tv" else "release_date"
+
+    # Title extraction logic used in your original function
+    title = details.get("name") or details.get("title", "") or ""
+
+    # Parse year from YYYY-MM-DD (or handle missing/bad formats)
+    year = 0
+    date_str = details.get(date_key)
+
+    if date_str and len(date_str) >= 4:
+        try:
+            year = int(date_str[:4])
+        except ValueError:
+            pass
+
+    return (title, year)
+
+
+def get_media_info(media_id: int, media_type: str) -> tuple[str, int]:
+    """
+    Fetch general info (title and year) about a TV show or movie from TMDB.
+    Now split into retrieval + parsing for modularity.
+    """
+    details = fetch_tmdb_object_details(media_id, media_type)
+    return parse_media_details(details, media_type)
+
+
 def get_media_info(media_id: int, media_type: str) -> tuple[str, int]:
     """
     Fetch general info (title and year) about a TV show or movie from TMDB.
