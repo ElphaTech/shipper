@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import tmdbsimple as tmdb
 
 def search_media_by_title(media_title: str, media_type: str) -> list[tmdb.tv.TV] | list[tmdb.movies.Movies]:
@@ -74,6 +75,89 @@ def parse_media_details(details: dict, media_type: str) -> tuple[str, int]:
 
     return (title, year)
 
+=======
+import tmdbsimple as tmdb
+
+
+def search_media_by_title(media_title: str, media_type: str) -> list[tmdb.tv.TV] | list[tmdb.movies.Movies]:
+    """
+    Search TMDB for media by title
+
+    Returns:
+        List of possible TMDB matches
+    """
+    try:
+        tmdb_objects = []
+
+        if media_type == 'tv':
+            results = tmdb.Search().tv(query=media_title)
+            for result in results.get('results', []):
+                media_id = result['id']
+                tmdb_object = tmdb.TV(media_id)
+                tmdb_objects.append(tmdb_object)
+            
+            return tmdb_objects
+        
+        elif media_type == 'movie':
+            results = tmdb.Search().movie(query=media_title)
+            for result in results.get('results', []):
+                media_id = result['id']
+                tmdb_object = tmdb.Movies(media_id)
+                tmdb_objects.append(tmdb_object)
+            
+            return tmdb_objects
+        
+        else:
+            return []   # Handle unexpected media_type
+        
+    except Exception:
+        return []
+
+
+def fetch_tmdb_object_details(media_id: int, media_type: str) -> dict:
+    """
+    Retrieve TMDB info() result for either TV or Movie.
+    Returns {} on failure.
+    """
+    try:
+        if media_type == "tv":
+            return tmdb.TV(media_id).info()
+
+        elif media_type == "movie":
+            return tmdb.Movies(media_id).info()
+
+        return {}
+
+    except Exception:
+        return {}
+
+def parse_media_details(details: dict, media_type: str) -> tuple[str, int]:
+    """
+    Extract (title, year) from a TMDB details dict.
+    """
+    if not details:
+        return ("", 0)
+
+    # TV → first_air_date, Movie → release_date
+    date_key = "first_air_date" if media_type == "tv" else "release_date"
+
+    # Title extraction logic used in your original function
+    title = details.get("name") or details.get("title", "") or ""
+
+    # Parse year from YYYY-MM-DD (or handle missing/bad formats)
+    year = 0
+    date_str = details.get(date_key)
+
+    if date_str and len(date_str) >= 4:
+        try:
+            year = int(date_str[:4])
+        except ValueError:
+            pass
+
+    return (title, year)
+
+
+>>>>>>> dba746d (commented out the duplicate get_media_info function)
 def get_media_info(media_id: int, media_type: str) -> tuple[str, int]:
     """
     Fetch general info (title and year) about a TV show or movie from TMDB.
@@ -82,6 +166,7 @@ def get_media_info(media_id: int, media_type: str) -> tuple[str, int]:
     details = fetch_tmdb_object_details(media_id, media_type)
     return parse_media_details(details, media_type)
 
+<<<<<<< HEAD
 def get_episode_title(media_id: int, season_num: int, episode_num: int) -> str:
     """
     Returns the episode title.
@@ -121,3 +206,93 @@ if __name__ == "__main__":
 
     # Get title test...
     print(get_episode_title(209867, '1', '12'))
+=======
+
+# NOTE: Duplicate definition intentionally commented out to avoid shadowing the
+# modular version above. Leaving it here for reference during ongoing refactor.
+# def get_media_info(media_id: int, media_type: str) -> tuple[str, int]:
+#     """
+#     Fetch general info (title and year) about a TV show or movie from TMDB.
+#
+#     Returns:
+#         tuple[str, int]: A tuple containing (title: str, year: int).
+#                          Returns ('', 0) on any failure or if date data is missing.
+#     """
+#     try:
+#         if media_type == 'tv':
+#             tmdb_object = tmdb.TV(media_id)
+#             details = tmdb_object.info()
+#             date_key = 'first_air_date'
+#
+#         elif media_type == 'movie':
+#             tmdb_object = tmdb.Movies(media_id)
+#             details = tmdb_object.info()
+#             date_key = 'release_date'
+#
+#         else:
+#             return ('', 0)  # Handle unexpected media_type
+#
+#         # Extract title
+#         title = details.get('name') or details.get('title', '')
+#
+#         # Extract year
+#         date_str = details.get(date_key)
+#         year = 0
+#         if date_str and len(date_str) >= 4:
+#             try:
+#                 # Only attempt to convert the first 4 characters to an integer
+#                 year = int(date_str[:4])
+#             except ValueError:
+#                 # If int conversion fails (e.g., date is "TBD"), year remains 0
+#                 pass
+#
+#         return (title, year)
+#
+#     except Exception:
+#         return ('', 0)
+
+
+def get_episode_title(media_id: int, season_num: int, episode_num: int) -> str:
+    """
+    Returns the episode title.
+    If it cannot be found a blank string is returned.
+    """
+
+    if not media_id or not season_num or not episode_num:
+        return ""
+
+    try:
+        season_info = tmdb.TV_Seasons(media_id, season_num).info()
+        episode_title = next(
+            (ep for ep in season_info.get("episodes", [])
+             if ep.get("episode_number") == int(episode_num)),
+            {}
+        ).get("name", "")
+    except Exception as e:
+        print(e)
+        episode_title = ""
+        pass
+
+    return episode_title
+
+
+if __name__ == "__main__":
+    from config import load_config
+
+    CONFIG = load_config()
+    tmdb.API_KEY = CONFIG.tmdb_api_key
+    tmdb.REQUESTS_TIMEOUT = 5
+
+    print("--- Running metadata.py tests ---")
+
+    # Inception movie test
+    title, year = get_media_info(media_id=27205, media_type='movie')
+    print(f"Test Result (Inception): {title} ({year})")
+
+    # No year tv test
+    title, year = get_media_info(media_id=8234, media_type='tv')
+    print(f"Test Result (7 La - Missing year): {title} ({year})")
+
+    # Get title test...
+    print(get_episode_title(209867, '1', '12'))
+>>>>>>> dba746d (commented out the duplicate get_media_info function)
