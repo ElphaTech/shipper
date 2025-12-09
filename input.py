@@ -5,7 +5,7 @@ import tmdbsimple as tmdb
 from copy import deepcopy
 import time
 import json
-from functions.tmdb_client import get_media_info, get_episode_title
+from functions.tmdb_client import get_media_info, get_episode_title, search_media_by_title
 from functions.config import load_config
 from pathlib import Path
 
