@@ -114,18 +114,61 @@ def parse_episode_code(episode_code: str):
 
 
 # == MAIN LOGIC ==
-defaultjob['id'] = survey.routines.input('ID: ', value='tmdb-').strip()
-ontmdb = defaultjob['id'].startswith('tmdb-')
+# defaultjob['id'] = survey.routines.input('ID: ', value='tmdb-').strip()
+# ontmdb = defaultjob['id'].startswith('tmdb-')
+# mediatypes = ('tv', 'movie')
+# defaultjob['type'] = mediatypes[survey.routines.select(
+#     'Type: ', options=mediatypes)]
+
+# if ontmdb:
+#     tmdbid = defaultjob['id'][5:]
+#     sname, syear = get_media_info(tmdbid, defaultjob['type'])
+# else:
+#     sname, syear = '', 0
+
+raw_id_or_title = survey.routines.input('ID or Title: ', value='').strip()
 mediatypes = ('tv', 'movie')
 defaultjob['type'] = mediatypes[survey.routines.select(
     'Type: ', options=mediatypes)]
+ontmdb = False
+sname, syear = '', 0
+tmdbid = None
 
-if ontmdb:
-    tmdbid = defaultjob['id'][5:]
+def is_tmdb_id(text: str) -> bool:
+    return text.startswith('tmdb-') or text.isdigit()
+
+# If user provided an ID, normalize and fetch info
+if is_tmdb_id(raw_id_or_title):
+    tmdbid = raw_id_or_title[5:] if raw_id_or_title.startswith('tmdb-') else raw_id_or_title
+    defaultjob['id'] = f"tmdb-{tmdbid}"
+    ontmdb = True
     sname, syear = get_media_info(tmdbid, defaultjob['type'])
 else:
-    sname, syear = '', 0
-
+    # Treat input as a title; search TMDB and select a match
+    results = search_media_by_title(raw_id_or_title, defaultjob['type'])
+    if results:
+        choices = []
+        for res in results:
+            media_id = getattr(res, "id", None)
+            if media_id is None:
+                continue
+            title, year = get_media_info(media_id, defaultjob['type'])
+            label = f"{title or 'Unknown'}{f' ({year})' if year else ''} [{media_id}]"
+            choices.append((label, (media_id, title, year)))
+        if choices:
+            sel = survey.routines.select("Select TMDB match:", options=[c[0] for c in choices])
+            media_id, title, year = choices[sel][1]
+            defaultjob['id'] = f"tmdb-{media_id}"
+            tmdbid = media_id
+            ontmdb = True
+            sname, syear = title, year
+    if not ontmdb:
+        defaultjob['id'] = survey.routines.input('ID: ', value='tmdb-').strip()
+        ontmdb = defaultjob['id'].startswith('tmdb-')
+        if ontmdb:
+            tmdbid = defaultjob['id'][5:]
+            sname, syear = get_media_info(tmdbid, defaultjob['type'])
+    
 defaultjob['name'] = survey.routines.input('Name: ', value=sname)
 defaultjob['year'] = survey.routines.numeric(
     'Year: ', value=int(syear), decimal=False)
