@@ -114,18 +114,6 @@ def parse_episode_code(episode_code: str):
 
 
 # == MAIN LOGIC ==
-# defaultjob['id'] = survey.routines.input('ID: ', value='tmdb-').strip()
-# ontmdb = defaultjob['id'].startswith('tmdb-')
-# mediatypes = ('tv', 'movie')
-# defaultjob['type'] = mediatypes[survey.routines.select(
-#     'Type: ', options=mediatypes)]
-
-# if ontmdb:
-#     tmdbid = defaultjob['id'][5:]
-#     sname, syear = get_media_info(tmdbid, defaultjob['type'])
-# else:
-#     sname, syear = '', 0
-
 raw_id_or_title = survey.routines.input('ID or Title: ', value='').strip()
 if not raw_id_or_title:
     # If no ID or title provided, prompt user to enter a TMDB ID.
