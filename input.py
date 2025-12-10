@@ -138,7 +138,11 @@ if is_tmdb_id(raw_id_or_title):
     sname, syear = get_media_info(tmdbid, defaultjob['type'])
 else:
     # Treat input as a title; search TMDB and select a match
-    results = search_media_by_title(raw_id_or_title, defaultjob['type'])
+    try:
+        results = search_media_by_title(raw_id_or_title, defaultjob['type'])
+    except Exception as e:
+        print("TMDB search failed. Please enter a TMDB ID instead.")
+        results = []
     if results:
         choices = []
         for res in results:
