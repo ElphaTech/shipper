@@ -1,10 +1,8 @@
 import tmdbsimple as tmdb
 
-
 def search_media_by_title(media_title: str, media_type: str) -> list[tmdb.tv.TV] | list[tmdb.movies.Movies]:
     """
     Search TMDB for media by title
-
     Returns:
         List of possible TMDB matches
     """
@@ -17,24 +15,23 @@ def search_media_by_title(media_title: str, media_type: str) -> list[tmdb.tv.TV]
                 media_id = result['id']
                 tmdb_object = tmdb.TV(media_id)
                 tmdb_objects.append(tmdb_object)
-            
+
             return tmdb_objects
-        
+
         elif media_type == 'movie':
             results = tmdb.Search().movie(query=media_title)
             for result in results.get('results', []):
                 media_id = result['id']
                 tmdb_object = tmdb.Movies(media_id)
                 tmdb_objects.append(tmdb_object)
-            
+
             return tmdb_objects
-        
+
         else:
             return []   # Handle unexpected media_type
-        
+
     except Exception:
         return []
-
 
 def fetch_tmdb_object_details(media_id: int, media_type: str) -> dict:
     """
@@ -49,7 +46,6 @@ def fetch_tmdb_object_details(media_id: int, media_type: str) -> dict:
             return tmdb.Movies(media_id).info()
 
         return {}
-
     except Exception:
         return {}
 
@@ -78,7 +74,6 @@ def parse_media_details(details: dict, media_type: str) -> tuple[str, int]:
 
     return (title, year)
 
-
 def get_media_info(media_id: int, media_type: str) -> tuple[str, int]:
     """
     Fetch general info (title and year) about a TV show or movie from TMDB.
@@ -86,49 +81,6 @@ def get_media_info(media_id: int, media_type: str) -> tuple[str, int]:
     """
     details = fetch_tmdb_object_details(media_id, media_type)
     return parse_media_details(details, media_type)
-
-
-def get_media_info(media_id: int, media_type: str) -> tuple[str, int]:
-    """
-    Fetch general info (title and year) about a TV show or movie from TMDB.
-
-    Returns:
-        tuple[str, int]: A tuple containing (title: str, year: int).
-                         Returns ('', 0) on any failure or if date data is missing.
-    """
-    try:
-        if media_type == 'tv':
-            tmdb_object = tmdb.TV(media_id)
-            details = tmdb_object.info()
-            date_key = 'first_air_date'
-
-        elif media_type == 'movie':
-            tmdb_object = tmdb.Movies(media_id)
-            details = tmdb_object.info()
-            date_key = 'release_date'
-
-        else:
-            return ('', 0)  # Handle unexpected media_type
-
-        # Extract title
-        title = details.get('name') or details.get('title', '')
-
-        # Extract year
-        date_str = details.get(date_key)
-        year = 0
-        if date_str and len(date_str) >= 4:
-            try:
-                # Only attempt to convert the first 4 characters to an integer
-                year = int(date_str[:4])
-            except ValueError:
-                # If int conversion fails (e.g., date is "TBD"), year remains 0
-                pass
-
-        return (title, year)
-
-    except Exception:
-        return ('', 0)
-
 
 def get_episode_title(media_id: int, season_num: int, episode_num: int) -> str:
     """
@@ -153,16 +105,12 @@ def get_episode_title(media_id: int, season_num: int, episode_num: int) -> str:
 
     return episode_title
 
-
 if __name__ == "__main__":
     from config import load_config
-
     CONFIG = load_config()
     tmdb.API_KEY = CONFIG.tmdb_api_key
     tmdb.REQUESTS_TIMEOUT = 5
-
     print("--- Running metadata.py tests ---")
-
     # Inception movie test
     title, year = get_media_info(media_id=27205, media_type='movie')
     print(f"Test Result (Inception): {title} ({year})")
