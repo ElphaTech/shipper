@@ -128,7 +128,7 @@ sname, syear = '', 0
 tmdbid = None
 
 def is_tmdb_id(text: str) -> bool:
-    return text.startswith('tmdb-') or text.isdigit()
+    return text.startswith('tmdb-')
 
 # If user provided an ID, normalize and fetch info
 if is_tmdb_id(raw_id_or_title):
